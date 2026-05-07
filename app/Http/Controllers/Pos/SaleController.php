@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Pos;
 
 use App\Http\Controllers\Controller;
+use App\Mail\SaleReceiptMail;
 use App\Models\DayClosing;
 use App\Models\Item;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Services\ArkeselSmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SaleController extends Controller
 {
@@ -79,11 +83,15 @@ class SaleController extends Controller
             'items.*.qty'      => 'required|integer|min:1',
             'payment_method'   => 'required|in:cash,transfer,card',
             'discount'         => 'nullable|numeric|min:0',
-            'customer_name'    => 'nullable|string|max:100',
+            'customer_name'    => 'required|string|max:100',
+            'customer_phone'   => 'nullable|string|max:20',
+            'customer_email'   => 'nullable|email|max:150',
             'notes'            => 'nullable|string|max:255',
         ]);
 
-        DB::transaction(function () use ($request, $branchId, $user) {
+        $sale = null;
+
+        DB::transaction(function () use ($request, $branchId, $user, &$sale) {
             $subtotal = 0;
             $lineItems = [];
 
@@ -117,6 +125,8 @@ class SaleController extends Controller
                 'total'          => $total,
                 'payment_method' => $request->payment_method,
                 'customer_name'  => $request->customer_name,
+                'customer_phone' => $request->customer_phone,
+                'customer_email' => $request->customer_email,
                 'notes'          => $request->notes,
             ]);
 
@@ -126,7 +136,35 @@ class SaleController extends Controller
             }
         });
 
-        return redirect()->route('pos.sale')
+        if ($sale) {
+            $sale->load('items', 'branch', 'cashier');
+
+            if ($request->filled('customer_phone')) {
+                (new ArkeselSmsService())->sendReceiptSms($request->customer_phone, [
+                    'customer_name'  => $sale->customer_name,
+                    'branch_name'    => $sale->branch->name,
+                    'sale_id'        => $sale->id,
+                    'items'          => $sale->items->toArray(),
+                    'discount'       => number_format($sale->discount, 2),
+                    'total'          => number_format($sale->total, 2),
+                    'payment_method' => $sale->payment_method,
+                ]);
+            }
+
+            if ($request->filled('customer_email')) {
+                try {
+                    Mail::to($request->customer_email)->send(new SaleReceiptMail($sale));
+                } catch (\Throwable $e) {
+                    Log::error('Receipt email failed to send', [
+                        'sale_id' => $sale->id,
+                        'email' => $request->customer_email,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->route('pos.receipt', $sale->id)
             ->with('success', 'Sale recorded successfully!');
     }
 

@@ -23,7 +23,9 @@
                     <td class="fw-semibold">{{ $user->name }}</td>
                     <td class="text-muted">{{ $user->email }}</td>
                     <td>
-                        @if($user->role === 'owner')
+                        @if($user->role === 'superadmin')
+                            <span class="badge bg-danger">Super Admin</span>
+                        @elseif($user->role === 'owner')
                             <span class="badge bg-warning text-dark">Owner</span>
                         @else
                             <span class="badge bg-primary">Cashier</span>

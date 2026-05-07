@@ -78,10 +78,27 @@
                 </div>
 
                 <div class="card-footer bg-white">
-                    {{-- Customer (optional) --}}
+                    {{-- Customer Info --}}
                     <div class="mb-2">
-                        <input type="text" name="customer_name" class="form-control form-control-sm"
-                               placeholder="Customer name (optional)">
+                        <input type="text" name="customer_name" class="form-control form-control-sm @error('customer_name') is-invalid @enderror"
+                               placeholder="Customer name *" required value="{{ old('customer_name') }}">
+                        @error('customer_name')
+                            <div class="invalid-feedback" style="font-size:.75rem">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-2">
+                        <input type="tel" name="customer_phone" class="form-control form-control-sm @error('customer_phone') is-invalid @enderror"
+                               placeholder="Phone (optional — for SMS receipt)" value="{{ old('customer_phone') }}">
+                        @error('customer_phone')
+                            <div class="invalid-feedback" style="font-size:.75rem">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-2">
+                        <input type="email" name="customer_email" class="form-control form-control-sm @error('customer_email') is-invalid @enderror"
+                               placeholder="Email (optional)" value="{{ old('customer_email') }}">
+                        @error('customer_email')
+                            <div class="invalid-feedback" style="font-size:.75rem">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     {{-- Discount --}}

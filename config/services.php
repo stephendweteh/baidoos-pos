@@ -30,4 +30,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'arkesel' => [
+        'api_key'   => env('ARKESEL_API_KEY', ''),
+        'sender_id' => env('ARKESEL_SENDER_ID', 'BaidoosPOS'),
+    ],
+
 ];

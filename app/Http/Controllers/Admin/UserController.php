@@ -59,11 +59,13 @@ class UserController extends Controller
             'name'      => 'required|string|max:100',
             'email'     => 'required|email|unique:users,email,' . $user->id,
             'password'  => 'nullable|string|min:6|confirmed',
-            'role'      => 'required|in:owner,cashier',
+            'role'      => 'required|in:owner,cashier,superadmin',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
-        if ($data['role'] === 'cashier' && empty($data['branch_id'])) {
+        $isSuperAdmin = auth()->user()->isSuperAdmin();
+
+        if (!$isSuperAdmin && $data['role'] === 'cashier' && empty($data['branch_id'])) {
             return back()->withErrors(['branch_id' => 'Cashier must be assigned to a branch.'])->withInput();
         }
 

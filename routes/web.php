@@ -66,6 +66,8 @@ Route::middleware('auth')->group(function () {
     // Super Admin Only
     Route::prefix('superadmin')->name('superadmin.')->middleware('role:superadmin')->group(function () {
         Route::post('/reset-sales', [SuperAdminController::class, 'resetSales'])->name('reset-sales');
+        Route::get('/settings',     [SuperAdminController::class, 'settings'])->name('settings');
+        Route::post('/settings',    [SuperAdminController::class, 'updateSettings'])->name('settings.update');
     });
 });
 

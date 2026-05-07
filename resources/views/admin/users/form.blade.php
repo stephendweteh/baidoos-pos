@@ -41,16 +41,24 @@
 
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">Role @if(!auth()->user()->isSuperAdmin())<span class="text-danger">*</span>@endif</label>
+                    @if(isset($user->id) && $user->role === 'superadmin')
+                        {{-- Superadmin role cannot be changed via this form --}}
+                        <input type="text" class="form-control bg-light text-capitalize" value="Super Admin" disabled>
+                        <input type="hidden" name="role" value="superadmin">
+                    @else
                     <select name="role" id="roleSelect" class="form-select @error('role') is-invalid @enderror"
                             onchange="toggleBranch()">
+                        @if(!auth()->user()->isSuperAdmin())
                         <option value="cashier" {{ old('role', $user->role) === 'cashier' ? 'selected' : '' }}>Cashier</option>
-                        <option value="owner"   {{ old('role', $user->role) === 'owner'   ? 'selected' : '' }}>Owner</option>
+                        @endif
+                        <option value="owner" {{ old('role', $user->role) === 'owner' ? 'selected' : '' }}>Owner</option>
                     </select>
+                    @endif
                     @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6 mb-3" id="branchField">
-                    <label class="form-label fw-semibold">Assign to Branch <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">Assign to Branch @if(!auth()->user()->isSuperAdmin())<span class="text-danger">*</span>@endif</label>
                     <select name="branch_id" class="form-select @error('branch_id') is-invalid @enderror">
                         <option value="">— Select Branch —</option>
                         @foreach($branches as $b)

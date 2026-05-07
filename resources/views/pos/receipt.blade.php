@@ -21,6 +21,12 @@
             @if($sale->customer_name)
             <div style="font-size:.8rem">Customer: <strong>{{ $sale->customer_name }}</strong></div>
             @endif
+            @if($sale->customer_phone)
+            <div style="font-size:.78rem; color:#555">Phone: {{ $sale->customer_phone }}</div>
+            @endif
+            @if($sale->customer_email)
+            <div style="font-size:.78rem; color:#555">Email: {{ $sale->customer_email }}</div>
+            @endif
         </div>
 
         <table class="table table-sm receipt-table">
@@ -60,6 +66,12 @@
             Served by: {{ $sale->cashier->name }}<br>
             Thank you!
         </div>
+
+        @if($sale->customer_phone)
+        <div class="alert alert-success py-1 mt-3 text-center no-print" style="font-size:.8rem">
+            <i class="bi bi-chat-dots-fill"></i> SMS receipt sent to {{ $sale->customer_phone }}
+        </div>
+        @endif
 
         <div class="d-flex gap-2 justify-content-center mt-4 no-print">
             <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">

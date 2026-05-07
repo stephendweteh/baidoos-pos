@@ -67,7 +67,7 @@
         </a>
         @endif
 
-        @if(auth()->user()->isOwner())
+        @if(auth()->user()->isOwner() && !auth()->user()->isSuperAdmin())
         <div class="nav-section">Admin</div>
         <a href="{{ route('pos.sale') }}" class="nav-link @active('pos.sale')">
             <i class="bi bi-cart-plus"></i> New Sale
@@ -88,6 +88,12 @@
 
         @if(auth()->user()->isSuperAdmin())
         <div class="nav-section">Super Admin</div>
+        <a href="{{ route('pos.sale') }}" class="nav-link @active('pos.sale')">
+            <i class="bi bi-cart-plus"></i> New Sale
+        </a>
+        <a href="{{ route('day-closing.close') }}" class="nav-link @active('day-closing.close')">
+            <i class="bi bi-lock"></i> Close A Branch
+        </a>
         <a href="{{ route('admin.branches.index') }}" class="nav-link @active('admin.branches.index')">
             <i class="bi bi-building"></i> Branches
         </a>
@@ -99,6 +105,9 @@
         </a>
         <a href="{{ route('admin.users.index') }}" class="nav-link @active('admin.users.index')">
             <i class="bi bi-people"></i> Users
+        </a>
+        <a href="{{ route('superadmin.settings') }}" class="nav-link @active('superadmin.settings')">
+            <i class="bi bi-gear-fill"></i> System Settings
         </a>
         <button type="button" class="nav-link text-danger w-100 text-start border-0 bg-transparent"
             data-bs-toggle="modal" data-bs-target="#resetSalesModal">
