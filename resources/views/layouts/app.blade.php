@@ -84,6 +84,9 @@
         <a href="{{ route('admin.users.index') }}" class="nav-link @active('admin.users.index')">
             <i class="bi bi-people"></i> Users
         </a>
+        <a href="{{ route('reports.index') }}" class="nav-link @active('reports.index')">
+            <i class="bi bi-bar-chart-line"></i> Reports
+        </a>
         @endif
 
         @if(auth()->user()->isSuperAdmin())
@@ -105,6 +108,9 @@
         </a>
         <a href="{{ route('admin.users.index') }}" class="nav-link @active('admin.users.index')">
             <i class="bi bi-people"></i> Users
+        </a>
+        <a href="{{ route('reports.index') }}" class="nav-link @active('reports.index')">
+            <i class="bi bi-bar-chart-line"></i> Reports
         </a>
         <a href="{{ route('superadmin.settings') }}" class="nav-link @active('superadmin.settings')">
             <i class="bi bi-gear-fill"></i> System Settings

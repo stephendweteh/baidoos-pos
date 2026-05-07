@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DayClosingController;
 use App\Http\Controllers\Pos\SaleController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +41,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/close',   [DayClosingController::class, 'close'])->name('close');
         Route::post('/close',  [DayClosingController::class, 'store'])->name('store');
         Route::get('/{dayClosing}', [DayClosingController::class, 'show'])->name('show');
+    });
+
+    // Reports — Owner & Superadmin
+    Route::prefix('reports')->name('reports.')->middleware('role:owner')->group(function () {
+        Route::get('/',       [ReportController::class, 'index'])->name('index');
+        Route::get('/export', [ReportController::class, 'export'])->name('export');
     });
 
     // Admin — Owner Only

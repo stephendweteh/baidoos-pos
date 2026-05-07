@@ -14,6 +14,12 @@
             <option value="{{ $b->id }}" {{ $branch == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
         @endforeach
     </select>
+    <select name="cashier_id" class="form-select form-select-sm" style="width:180px" onchange="this.form.submit()">
+        <option value="">All Cashiers</option>
+        @foreach($cashiers as $c)
+            <option value="{{ $c->id }}" {{ $cashierId == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
+        @endforeach
+    </select>
     @endif
     @if($date !== today()->toDateString())
     <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">Today</a>
