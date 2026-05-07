@@ -55,6 +55,16 @@
                 </tr>
                 <tr><td colspan="2" class="text-end text-muted">Payment</td>
                     <td class="text-end text-uppercase">{{ $sale->payment_method }}</td></tr>
+                @if($sale->payment_method === 'mtn_momo')
+                <tr>
+                    <td colspan="2" class="text-end text-muted">MoMo Status</td>
+                    <td class="text-end">
+                        <span class="badge {{ $sale->payment_status === 'success' ? 'bg-success' : ($sale->payment_status === 'failed' ? 'bg-danger' : 'bg-warning text-dark') }}" id="momoStatusBadge">
+                            {{ strtoupper($sale->payment_status) }}
+                        </span>
+                    </td>
+                </tr>
+                @endif
             </tfoot>
         </table>
 
@@ -67,7 +77,24 @@
             Thank you!
         </div>
 
-        @if($sale->customer_phone)
+        @if($sale->payment_method === 'mtn_momo')
+        <div id="momoStatusAlert" class="alert {{ $sale->payment_status === 'success' ? 'alert-success' : ($sale->payment_status === 'failed' ? 'alert-danger' : 'alert-warning') }} py-2 mt-3 text-center no-print" style="font-size:.82rem">
+            @if($sale->payment_status === 'success')
+                <i class="bi bi-check-circle-fill"></i> MTN payment confirmed.
+            @elseif($sale->payment_status === 'failed')
+                <i class="bi bi-x-circle-fill"></i> MTN payment failed. Ask customer to retry.
+            @else
+                <i class="bi bi-hourglass-split"></i> Waiting for customer to approve MTN prompt and enter PIN.
+            @endif
+        </div>
+        <div class="text-center no-print mb-2">
+            <button type="button" id="checkMomoBtn" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-arrow-repeat"></i> Check MTN Status
+            </button>
+        </div>
+        @endif
+
+        @if($sale->customer_phone && $sale->payment_status === 'success')
         <div class="alert alert-success py-1 mt-3 text-center no-print" style="font-size:.8rem">
             <i class="bi bi-chat-dots-fill"></i> SMS receipt sent to {{ $sale->customer_phone }}
         </div>
@@ -86,3 +113,64 @@
 </div>
 </div>
 @endsection
+
+@if($sale->payment_method === 'mtn_momo' && $sale->payment_status === 'pending')
+@push('scripts')
+<script>
+(function () {
+    const btn = document.getElementById('checkMomoBtn');
+    const alertBox = document.getElementById('momoStatusAlert');
+    const badge = document.getElementById('momoStatusBadge');
+    let polling = null;
+
+    async function checkStatus() {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Checking...';
+
+        try {
+            const response = await fetch('{{ route('pos.receipt.momo-status', $sale) }}', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json();
+
+            if (!data.ok) {
+                throw new Error(data.message || 'Status check failed.');
+            }
+
+            badge.textContent = String(data.payment_status || '').toUpperCase();
+
+            if (data.payment_status === 'success') {
+                badge.className = 'badge bg-success';
+                alertBox.className = 'alert alert-success py-2 mt-3 text-center no-print';
+                alertBox.innerHTML = '<i class="bi bi-check-circle-fill"></i> ' + data.message;
+                clearInterval(polling);
+                setTimeout(() => window.location.reload(), 1200);
+                return;
+            }
+
+            if (data.payment_status === 'failed') {
+                badge.className = 'badge bg-danger';
+                alertBox.className = 'alert alert-danger py-2 mt-3 text-center no-print';
+                alertBox.innerHTML = '<i class="bi bi-x-circle-fill"></i> ' + data.message;
+                clearInterval(polling);
+                return;
+            }
+
+            badge.className = 'badge bg-warning text-dark';
+            alertBox.className = 'alert alert-warning py-2 mt-3 text-center no-print';
+            alertBox.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + data.message;
+        } catch (error) {
+            alertBox.className = 'alert alert-danger py-2 mt-3 text-center no-print';
+            alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> ' + (error.message || 'Could not check payment status.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Check MTN Status';
+        }
+    }
+
+    btn.addEventListener('click', checkStatus);
+    polling = setInterval(checkStatus, 7000);
+})();
+</script>
+@endpush
+@endif

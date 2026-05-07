@@ -30,16 +30,24 @@ class SuperAdminController extends Controller
     public function updateSettings(Request $request)
     {
         $request->validate([
-            'ARKESEL_API_KEY'   => 'nullable|string|max:200',
-            'ARKESEL_SENDER_ID' => 'nullable|string|max:50',
-            'MAIL_MAILER'       => 'nullable|string|max:50',
-            'MAIL_HOST'         => 'nullable|string|max:200',
-            'MAIL_PORT'         => 'nullable|integer',
-            'MAIL_USERNAME'     => 'nullable|string|max:200',
-            'MAIL_PASSWORD'     => 'nullable|string|max:200',
-            'MAIL_ENCRYPTION'   => 'nullable|string|max:10',
-            'MAIL_FROM_ADDRESS' => 'nullable|email|max:200',
-            'MAIL_FROM_NAME'    => 'nullable|string|max:100',
+            'ARKESEL_API_KEY'             => 'nullable|string|max:200',
+            'ARKESEL_SENDER_ID'           => 'nullable|string|max:50',
+            'MAIL_MAILER'                 => 'nullable|string|max:50',
+            'MAIL_HOST'                   => 'nullable|string|max:200',
+            'MAIL_PORT'                   => 'nullable|integer',
+            'MAIL_USERNAME'               => 'nullable|string|max:200',
+            'MAIL_PASSWORD'               => 'nullable|string|max:200',
+            'MAIL_ENCRYPTION'             => 'nullable|string|max:10',
+            'MAIL_FROM_ADDRESS'           => 'nullable|email|max:200',
+            'MAIL_FROM_NAME'              => 'nullable|string|max:100',
+            'MTN_MOMO_BASE_URL'           => 'nullable|string|max:200',
+            'MTN_MOMO_SUBSCRIPTION_KEY'   => 'nullable|string|max:200',
+            'MTN_MOMO_API_USER'           => 'nullable|string|max:200',
+            'MTN_MOMO_API_KEY'            => 'nullable|string|max:200',
+            'MTN_MOMO_TARGET_ENVIRONMENT' => 'nullable|string|max:50',
+            'MTN_MOMO_CURRENCY'           => 'nullable|string|max:5',
+            'MTN_MOMO_CALLBACK_URL'       => 'nullable|string|max:300',
+            'MTN_MOMO_MERCHANT_NAME'      => 'nullable|string|max:100',
         ]);
 
         $keys = [
@@ -47,6 +55,10 @@ class SuperAdminController extends Controller
             'MAIL_MAILER', 'MAIL_HOST', 'MAIL_PORT',
             'MAIL_USERNAME', 'MAIL_PASSWORD', 'MAIL_ENCRYPTION',
             'MAIL_FROM_ADDRESS', 'MAIL_FROM_NAME',
+            'MTN_MOMO_BASE_URL', 'MTN_MOMO_SUBSCRIPTION_KEY',
+            'MTN_MOMO_API_USER', 'MTN_MOMO_API_KEY',
+            'MTN_MOMO_TARGET_ENVIRONMENT', 'MTN_MOMO_CURRENCY',
+            'MTN_MOMO_CALLBACK_URL', 'MTN_MOMO_MERCHANT_NAME',
         ];
 
         $envPath = base_path('.env');
@@ -66,15 +78,18 @@ class SuperAdminController extends Controller
 
         file_put_contents($envPath, $envContent);
 
-        // Clear config cache in a separate process to avoid crashing the dev server
+        // Clear config cache to pick up new .env values on next request
         try {
             $bootstrapCache = base_path('bootstrap/cache/config.php');
             if (file_exists($bootstrapCache)) {
                 @unlink($bootstrapCache);
             }
         } catch (\Throwable $e) {
-            // Non-fatal — cache will auto-rebuild on next request
+            // Non-fatal
         }
+
+        // Flush cached MTN MoMo access token so new credentials take effect immediately
+        \Illuminate\Support\Facades\Cache::forget('mtn_momo_access_token');
 
         return back()->with('success', 'Settings saved successfully.');
     }

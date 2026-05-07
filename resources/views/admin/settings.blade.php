@@ -141,6 +141,114 @@
 
 </div>
 
+{{-- ─── MTN MoMo ──────────────────────────────────────── --}}
+<div class="row g-4 mt-0">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex align-items-center gap-2">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/9/93/New-mtn-logo.jpg"
+                     alt="MTN" style="height:28px; width:auto; border-radius:4px">
+                <div>
+                    <div class="fw-bold">MTN Mobile Money (MoMo) Configuration</div>
+                    <small class="text-muted">Merchant: DAAB C26 ENTERPRISE &mdash; ID: 047100 &mdash; Number: 0557115748</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+
+                    <div class="col-lg-4">
+                        <label class="form-label fw-semibold">Target Environment</label>
+                        <select name="MTN_MOMO_TARGET_ENVIRONMENT" class="form-select">
+                            <option value="sandbox" {{ env('MTN_MOMO_TARGET_ENVIRONMENT', 'sandbox') === 'sandbox' ? 'selected' : '' }}>Sandbox (Testing)</option>
+                            <option value="mtnghana" {{ env('MTN_MOMO_TARGET_ENVIRONMENT') === 'mtnghana' ? 'selected' : '' }}>MTN Ghana (Live)</option>
+                            <option value="mtncongo" {{ env('MTN_MOMO_TARGET_ENVIRONMENT') === 'mtncongo' ? 'selected' : '' }}>MTN Congo (Live)</option>
+                        </select>
+                        <div class="form-text">Use <strong>mtnghana</strong> for live Ghana transactions.</div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <label class="form-label fw-semibold">Base URL</label>
+                        <input type="text" name="MTN_MOMO_BASE_URL"
+                               class="form-control font-monospace"
+                               value="{{ env('MTN_MOMO_BASE_URL', 'https://sandbox.momodeveloper.mtn.com') }}"
+                               placeholder="https://sandbox.momodeveloper.mtn.com">
+                        <div class="form-text">Sandbox: <code>sandbox.momodeveloper.mtn.com</code></div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <label class="form-label fw-semibold">Currency</label>
+                        <input type="text" name="MTN_MOMO_CURRENCY"
+                               class="form-control"
+                               value="{{ env('MTN_MOMO_CURRENCY', 'GHS') }}"
+                               maxlength="5"
+                               placeholder="GHS">
+                        <div class="form-text">3-letter currency code. Use <strong>GHS</strong> for Ghana.</div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <label class="form-label fw-semibold">Subscription Key</label>
+                        <input type="text" name="MTN_MOMO_SUBSCRIPTION_KEY"
+                               class="form-control font-monospace"
+                               value="{{ env('MTN_MOMO_SUBSCRIPTION_KEY') }}"
+                               placeholder="From MTN MoMo Developer portal">
+                        <div class="form-text">Primary/Secondary key from your Collection product.</div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <label class="form-label fw-semibold">API User (UUID)</label>
+                        <input type="text" name="MTN_MOMO_API_USER"
+                               class="form-control font-monospace"
+                               value="{{ env('MTN_MOMO_API_USER') }}"
+                               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                        <div class="form-text">Generated UUID via MTN /v1_0/apiuser endpoint.</div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <label class="form-label fw-semibold">API Key</label>
+                        <div class="input-group">
+                            <input type="password" name="MTN_MOMO_API_KEY" id="momoApiKeyInput"
+                                   class="form-control font-monospace"
+                                   value="{{ env('MTN_MOMO_API_KEY') }}"
+                                   placeholder="••••••••">
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="toggleMomoKey()">
+                                <i class="bi bi-eye" id="momoApiKeyIcon"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Generated via MTN /v1_0/apiuser/{apiUser}/apikey.</div>
+                    </div>
+
+                    <div class="col-lg-8">
+                        <label class="form-label fw-semibold">Callback URL</label>
+                        <input type="url" name="MTN_MOMO_CALLBACK_URL"
+                               class="form-control font-monospace"
+                               value="{{ env('MTN_MOMO_CALLBACK_URL', url('/webhooks/mtn/momo')) }}"
+                               placeholder="https://yourdomain.com/webhooks/mtn/momo">
+                        <div class="form-text">Must be a public HTTPS URL. MTN posts payment result here.</div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <label class="form-label fw-semibold">Merchant Name</label>
+                        <input type="text" name="MTN_MOMO_MERCHANT_NAME"
+                               class="form-control"
+                               value="{{ env('MTN_MOMO_MERCHANT_NAME', 'DAAB C26 ENTERPRISE') }}"
+                               placeholder="DAAB C26 ENTERPRISE">
+                    </div>
+
+                </div>
+
+                <div class="alert alert-info py-2 mt-3 mb-0" style="font-size:.82rem">
+                    <i class="bi bi-info-circle"></i>
+                    Get your credentials from
+                    <a href="https://momodeveloper.mtn.com" target="_blank" rel="noopener noreferrer">momodeveloper.mtn.com</a>.
+                    Subscribe to the <strong>Collection</strong> product, then create an API user &amp; key using the Sandbox Provisioning API or the portal.
+                    Set <strong>Target Environment</strong> to <strong>mtnghana</strong> when going live.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Save button --}}
 <div class="mt-4 d-flex gap-2">
     <button type="submit" class="btn btn-primary px-4">
@@ -157,6 +265,18 @@
 function toggleMailPassword() {
     const input = document.getElementById('mailPasswordInput');
     const icon  = document.getElementById('mailPasswordIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+function toggleMomoKey() {
+    const input = document.getElementById('momoApiKeyInput');
+    const icon  = document.getElementById('momoApiKeyIcon');
     if (input.type === 'password') {
         input.type = 'text';
         icon.className = 'bi bi-eye-slash';

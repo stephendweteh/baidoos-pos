@@ -87,11 +87,14 @@
                         @enderror
                     </div>
                     <div class="mb-2">
-                        <input type="tel" name="customer_phone" class="form-control form-control-sm @error('customer_phone') is-invalid @enderror"
-                               placeholder="Phone (optional — for SMS receipt)" value="{{ old('customer_phone') }}">
+                        <input type="tel" id="customerPhoneInput" name="customer_phone" class="form-control form-control-sm @error('customer_phone') is-invalid @enderror"
+                               placeholder="Phone (optional — for SMS receipt / required for MTN MoMo)" value="{{ old('customer_phone') }}">
                         @error('customer_phone')
                             <div class="invalid-feedback" style="font-size:.75rem">{{ $message }}</div>
                         @enderror
+                        <small id="momoPhoneHint" class="text-muted" style="font-size:.72rem; display:none">
+                            Customer phone is required when MTN MoMo is selected.
+                        </small>
                     </div>
                     <div class="mb-2">
                         <input type="email" name="customer_email" class="form-control form-control-sm @error('customer_email') is-invalid @enderror"
@@ -115,12 +118,15 @@
                     </div>
 
                     {{-- Payment Method --}}
-                    <div class="btn-group w-100 mb-3" role="group">
-                        @foreach(['cash' => 'Cash', 'transfer' => 'Transfer', 'card' => 'Card'] as $val => $label)
-                        <input type="radio" class="btn-check" name="payment_method"
+                    <div class="btn-group w-100 mb-1" role="group">
+                        @foreach(['cash' => 'Cash', 'transfer' => 'Transfer', 'card' => 'Card', 'mtn_momo' => 'MTN MoMo'] as $val => $label)
+                        <input type="radio" class="btn-check payment-method-input" name="payment_method"
                                id="pm_{{ $val }}" value="{{ $val }}" {{ $val === 'cash' ? 'checked' : '' }}>
                         <label class="btn btn-outline-secondary btn-sm" for="pm_{{ $val }}">{{ $label }}</label>
                         @endforeach
+                    </div>
+                    <div id="momoHelp" class="alert alert-info py-1 px-2 mb-3" style="font-size:.75rem; display:none">
+                        When you click Record Sale, customer will receive an MTN prompt on phone to enter PIN.
                     </div>
 
                     {{-- Notes --}}
@@ -275,10 +281,30 @@ function filterItems() {
     });
 }
 
+function syncMomoRequirements() {
+    const selected = document.querySelector('input[name="payment_method"]:checked');
+    const isMomo = selected && selected.value === 'mtn_momo';
+    const phoneInput = document.getElementById('customerPhoneInput');
+    const momoHelp = document.getElementById('momoHelp');
+    const momoPhoneHint = document.getElementById('momoPhoneHint');
+
+    phoneInput.required = !!isMomo;
+    momoHelp.style.display = isMomo ? '' : 'none';
+    momoPhoneHint.style.display = isMomo ? '' : 'none';
+}
+
+document.querySelectorAll('.payment-method-input').forEach(el => {
+    el.addEventListener('change', syncMomoRequirements);
+});
+
+syncMomoRequirements();
+
 // Prevent double-submit
 document.getElementById('saleForm').addEventListener('submit', function () {
+    const selected = document.querySelector('input[name="payment_method"]:checked');
+    const isMomo = selected && selected.value === 'mtn_momo';
     document.getElementById('submitBtn').disabled = true;
-    document.getElementById('submitBtn').textContent = 'Recording...';
+    document.getElementById('submitBtn').textContent = isMomo ? 'Sending MTN Prompt...' : 'Recording...';
 });
 </script>
 @endpush

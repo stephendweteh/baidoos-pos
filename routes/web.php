@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/sale', [SaleController::class, 'index'])->name('sale');
         Route::post('/sale', [SaleController::class, 'store'])->name('sale.store');
         Route::get('/receipt/{sale}', [SaleController::class, 'show'])->name('receipt');
+        Route::get('/receipt/{sale}/momo-status', [SaleController::class, 'momoStatus'])->name('receipt.momo-status');
     });
 
     // Day Closing
@@ -77,6 +78,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings',    [SuperAdminController::class, 'updateSettings'])->name('settings.update');
     });
 });
+
+Route::post('/webhooks/mtn/momo', [SaleController::class, 'momoWebhook'])->name('webhooks.mtn.momo');
 
 Auth::routes();
 
