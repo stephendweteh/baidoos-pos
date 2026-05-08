@@ -34,8 +34,8 @@
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
-                    <div class="text-muted" style="font-size:.7rem">TRANSFER+CARD</div>
-                    <div class="fw-bold">GH₵ {{ number_format($summary['total_transfer_sales'] + $summary['total_card_sales'], 2) }}</div>
+                    <div class="text-muted" style="font-size:.7rem">MTN MOMO</div>
+                    <div class="fw-bold">GH₵ {{ number_format($summary['total_momo_sales'], 2) }}</div>
                 </div>
             </div>
         </div>

@@ -140,7 +140,10 @@
 {{-- Main Content --}}
 <div class="main-wrap">
     <div class="topbar d-flex align-items-center justify-content-between">
-        <h6 class="mb-0 fw-semibold text-dark">@yield('page-title', 'Dashboard')</h6>
+        <div class="d-flex align-items-center gap-2">
+            <span id="posTopbarBtn"></span>
+            <h6 class="mb-0 fw-semibold text-dark">@yield('page-title', 'Dashboard')</h6>
+        </div>
         <div class="text-muted" style="font-size:.8rem">
             <i class="bi bi-calendar3"></i> {{ now()->format('l, d M Y') }}
         </div>

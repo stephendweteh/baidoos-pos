@@ -48,8 +48,8 @@
     </div>
     <div class="col-6 col-md-3">
         <div class="stat-card text-center">
-            <div class="text-muted mb-1" style="font-size:.72rem; text-transform:uppercase">Transfer + Card</div>
-            <div class="fw-bold" style="font-size:1.4rem">GH₵ {{ number_format($transferSales + $cardSales, 2) }}</div>
+            <div class="text-muted mb-1" style="font-size:.72rem; text-transform:uppercase">MTN MoMo</div>
+            <div class="fw-bold" style="font-size:1.4rem">GH₵ {{ number_format($momoSales, 2) }}</div>
         </div>
     </div>
 </div>

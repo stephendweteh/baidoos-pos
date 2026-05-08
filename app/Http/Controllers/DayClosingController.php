@@ -69,8 +69,7 @@ class DayClosingController extends Controller
         $summary = [
             'total_sales'          => $todaySales->sum('total'),
             'total_cash_sales'     => $todaySales->where('payment_method', 'cash')->sum('total'),
-            'total_transfer_sales' => $todaySales->where('payment_method', 'transfer')->sum('total'),
-            'total_card_sales'     => $todaySales->where('payment_method', 'card')->sum('total'),
+            'total_momo_sales'     => $todaySales->where('payment_method', 'mtn_momo')->sum('total'),
             'transaction_count'    => $todaySales->count(),
         ];
 
@@ -107,8 +106,7 @@ class DayClosingController extends Controller
 
             $totalSales         = $todaySales->sum('total');
             $totalCash          = $todaySales->where('payment_method', 'cash')->sum('total');
-            $totalTransfer      = $todaySales->where('payment_method', 'transfer')->sum('total');
-            $totalCard          = $todaySales->where('payment_method', 'card')->sum('total');
+            $totalMomo          = $todaySales->where('payment_method', 'mtn_momo')->sum('total');
             $openingCash        = (float) $request->opening_cash;
             $cashCounted        = (float) $request->cash_counted;
             $expectedCash       = $openingCash + $totalCash;
@@ -121,8 +119,7 @@ class DayClosingController extends Controller
                 'opening_cash'          => $openingCash,
                 'total_sales'           => $totalSales,
                 'total_cash_sales'      => $totalCash,
-                'total_transfer_sales'  => $totalTransfer,
-                'total_card_sales'      => $totalCard,
+                'total_momo_sales'      => $totalMomo,
                 'transaction_count'     => $todaySales->count(),
                 'cash_counted'          => $cashCounted,
                 'cash_variance'         => $variance,

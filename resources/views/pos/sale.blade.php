@@ -2,6 +2,35 @@
 @section('title', 'POS — New Sale')
 @section('page-title', 'New Sale — ' . ($branch->name ?? ''))
 
+@push('styles')
+<style>
+    /* Hide sidebar and collapse main-wrap on POS sale page */
+    body.pos-mode .sidebar { transform: translateX(-230px); }
+    body.pos-mode .main-wrap { margin-left: 0 !important; }
+    .sidebar { transition: transform .25s ease; }
+    .main-wrap { transition: margin-left .25s ease; }
+    /* Sidebar toggle button lives inside the topbar */
+    #sidebarToggleBtn {
+        width: 34px;
+        height: 34px;
+        border-radius: 6px;
+        background: #1a2236;
+        color: #fff;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    #sidebarToggleBtn:hover { background: #2d3a55; }
+    /* Push toggle into topbar; hide by default, show in pos-mode */
+    #posTopbarBtn { display: none; }
+    body.pos-mode #posTopbarBtn { display: flex; }
+</style>
+@endpush
+
 @section('content')
 @if($todayClosed)
 <div class="alert alert-warning">
@@ -119,7 +148,7 @@
 
                     {{-- Payment Method --}}
                     <div class="btn-group w-100 mb-1" role="group">
-                        @foreach(['cash' => 'Cash', 'transfer' => 'Transfer', 'card' => 'Card', 'mtn_momo' => 'MTN MoMo'] as $val => $label)
+                        @foreach(['cash' => 'Cash', 'mtn_momo' => 'MTN MoMo'] as $val => $label)
                         <input type="radio" class="btn-check payment-method-input" name="payment_method"
                                id="pm_{{ $val }}" value="{{ $val }}" {{ $val === 'cash' ? 'checked' : '' }}>
                         <label class="btn btn-outline-secondary btn-sm" for="pm_{{ $val }}">{{ $label }}</label>
@@ -306,5 +335,27 @@ document.getElementById('saleForm').addEventListener('submit', function () {
     document.getElementById('submitBtn').disabled = true;
     document.getElementById('submitBtn').textContent = isMomo ? 'Sending MTN Prompt...' : 'Recording...';
 });
+
+// ── Sidebar toggle on POS page ────────────────────────────────
+(function () {
+    // Create toggle button and inject into topbar placeholder
+    var btn = document.createElement('button');
+    btn.id = 'sidebarToggleBtn';
+    btn.title = 'Show / hide menu';
+    btn.innerHTML = '<i class="bi bi-list"></i>';
+    var placeholder = document.getElementById('posTopbarBtn');
+    if (placeholder) placeholder.appendChild(btn);
+
+    // Start with sidebar hidden
+    document.body.classList.add('pos-mode');
+
+    btn.addEventListener('click', function () {
+        document.body.classList.toggle('pos-mode');
+        var icon = btn.querySelector('i');
+        icon.className = document.body.classList.contains('pos-mode')
+            ? 'bi bi-list'
+            : 'bi bi-x-lg';
+    });
+})();
 </script>
 @endpush

@@ -39,14 +39,8 @@
             </div>
             <div class="col-6 col-md-2">
                 <div class="stat-card">
-                    <div class="text-muted" style="font-size:.68rem">TRANSFER</div>
-                    <div class="fw-bold">GH₵ {{ number_format($dayClosing->total_transfer_sales, 2) }}</div>
-                </div>
-            </div>
-            <div class="col-6 col-md-2">
-                <div class="stat-card">
-                    <div class="text-muted" style="font-size:.68rem">CARD</div>
-                    <div class="fw-bold">GH₵ {{ number_format($dayClosing->total_card_sales, 2) }}</div>
+                    <div class="text-muted" style="font-size:.68rem">MTN MOMO</div>
+                    <div class="fw-bold">GH₵ {{ number_format($dayClosing->total_momo_sales, 2) }}</div>
                 </div>
             </div>
             <div class="col-6 col-md-2">

@@ -39,8 +39,7 @@ class DashboardController extends Controller
         $totalSales       = (clone $query)->sum('total');
         $transactionCount = (clone $query)->count();
         $cashSales        = (clone $query)->where('payment_method', 'cash')->sum('total');
-        $transferSales    = (clone $query)->where('payment_method', 'transfer')->sum('total');
-        $cardSales        = (clone $query)->where('payment_method', 'card')->sum('total');
+        $momoSales        = (clone $query)->where('payment_method', 'mtn_momo')->sum('total');
 
         // Top 5 items today
         $topItems = DB::table('sale_items')
@@ -79,7 +78,7 @@ class DashboardController extends Controller
 
         return view('dashboard', compact(
             'totalSales', 'transactionCount', 'cashSales',
-            'transferSales', 'cardSales', 'topItems',
+            'momoSales', 'topItems',
             'salesByBranch', 'recentSales', 'branches', 'cashiers',
             'date', 'branch', 'cashierId'
         ));

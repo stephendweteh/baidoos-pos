@@ -12,7 +12,7 @@ class DayClosing extends Model
     protected $fillable = [
         'branch_id', 'user_id', 'closing_date',
         'opening_cash', 'total_sales',
-        'total_cash_sales', 'total_transfer_sales', 'total_card_sales',
+        'total_cash_sales', 'total_momo_sales',
         'transaction_count', 'cash_counted', 'cash_variance', 'notes',
     ];
 

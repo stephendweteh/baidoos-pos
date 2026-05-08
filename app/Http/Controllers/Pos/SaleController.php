@@ -82,7 +82,7 @@ class SaleController extends Controller
             'items'            => 'required|array|min:1',
             'items.*.id'       => 'required|exists:items,id',
             'items.*.qty'      => 'required|integer|min:1',
-            'payment_method'   => 'required|in:cash,transfer,card,mtn_momo',
+            'payment_method'   => 'required|in:cash,mtn_momo',
             'discount'         => 'nullable|numeric|min:0',
             'customer_name'    => 'required|string|max:100',
             'customer_phone'   => 'nullable|string|max:20',
