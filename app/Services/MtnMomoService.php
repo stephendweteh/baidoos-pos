@@ -15,7 +15,7 @@ class MtnMomoService
 
         $payload = [
             'amount' => number_format($amount, 2, '.', ''),
-            'currency' => config('services.mtn_momo.currency', 'GHS'),
+            'currency' => $this->resolveCurrency(),
             'externalId' => $externalId,
             'payer' => [
                 'partyIdType' => 'MSISDN',
@@ -116,5 +116,15 @@ class MtnMomoService
         }
 
         throw new \InvalidArgumentException('Invalid Ghana phone number for MTN MoMo. Use 055xxxxxxx format.');
+    }
+
+    private function resolveCurrency(): string
+    {
+        $targetEnvironment = strtolower((string) config('services.mtn_momo.target_environment', 'sandbox'));
+        if ($targetEnvironment === 'sandbox') {
+            return 'EUR';
+        }
+
+        return (string) config('services.mtn_momo.currency', 'GHS');
     }
 }

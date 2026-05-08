@@ -122,6 +122,7 @@
     const alertBox = document.getElementById('momoStatusAlert');
     const badge = document.getElementById('momoStatusBadge');
     let polling = null;
+    let failedChecks = 0;
 
     async function checkStatus() {
         btn.disabled = true;
@@ -136,6 +137,8 @@
             if (!data.ok) {
                 throw new Error(data.message || 'Status check failed.');
             }
+
+            failedChecks = 0;
 
             badge.textContent = String(data.payment_status || '').toUpperCase();
 
@@ -160,8 +163,14 @@
             alertBox.className = 'alert alert-warning py-2 mt-3 text-center no-print';
             alertBox.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + data.message;
         } catch (error) {
+            failedChecks += 1;
             alertBox.className = 'alert alert-danger py-2 mt-3 text-center no-print';
             alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> ' + (error.message || 'Could not check payment status.');
+
+            if (failedChecks >= 3 && polling) {
+                clearInterval(polling);
+                alertBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> Unable to verify status right now. Please click "Check MTN Status" after a moment.';
+            }
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Check MTN Status';

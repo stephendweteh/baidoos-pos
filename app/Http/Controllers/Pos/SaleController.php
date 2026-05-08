@@ -163,8 +163,13 @@ class SaleController extends Controller
                     'momo_status'       => 'PENDING',
                 ]);
 
+                $isSandbox = strtolower((string) config('services.mtn_momo.target_environment', 'sandbox')) === 'sandbox';
+                $message = $isSandbox
+                    ? 'Sandbox payment initiated. No real phone prompt is sent in sandbox; use Check MTN Status to confirm.'
+                    : 'MTN MoMo prompt sent. Ask customer to approve and enter PIN on their phone.';
+
                 return redirect()->route('pos.receipt', $sale->id)
-                    ->with('warning', 'MTN MoMo prompt sent. Ask customer to approve and enter PIN on their phone.');
+                    ->with('warning', $message);
             } catch (\Throwable $e) {
                 Log::error('MTN MoMo RequestToPay failed', [
                     'sale_id' => $sale->id,
@@ -248,6 +253,20 @@ class SaleController extends Controller
                 'payment_reference' => $sale->payment_reference,
                 'error' => $e->getMessage(),
             ]);
+
+            if (str_contains($e->getMessage(), 'RESOURCE_NOT_FOUND')) {
+                $sale->update([
+                    'payment_status' => 'failed',
+                    'momo_status' => 'NOT_FOUND',
+                ]);
+
+                return response()->json([
+                    'ok' => true,
+                    'payment_status' => 'failed',
+                    'momo_status' => 'NOT_FOUND',
+                    'message' => 'MTN could not find this transaction. Please start a new MoMo payment.',
+                ]);
+            }
 
             return response()->json([
                 'ok' => false,
@@ -336,12 +355,18 @@ class SaleController extends Controller
 
     private function momoStatusMessage(string $paymentStatus, ?string $momoStatus): string
     {
+        $isSandbox = strtolower((string) config('services.mtn_momo.target_environment', 'sandbox')) === 'sandbox';
+
         if ($paymentStatus === 'success') {
             return 'Payment confirmed successfully.';
         }
 
         if ($paymentStatus === 'failed') {
             return 'Payment failed (' . ($momoStatus ?: 'UNKNOWN') . ').';
+        }
+
+        if ($isSandbox) {
+            return 'Sandbox transaction is being processed (' . ($momoStatus ?: 'PENDING') . ').';
         }
 
         return 'Awaiting customer approval on phone (' . ($momoStatus ?: 'PENDING') . ').';
