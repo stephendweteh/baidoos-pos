@@ -81,4 +81,23 @@ class ArkeselSmsService
 
         return $this->send($phone, $message);
     }
+
+    /**
+     * Build and send a transaction alert SMS to the business owner.
+     */
+    public function sendOwnerAlertSms(string $phone, array $data): bool
+    {
+        $items = collect($data['items'])->map(fn ($i) => "{$i['item_name']} x{$i['quantity']}")->implode(', ');
+
+        $message  = "[Baidoos POS] New Sale #" . $data['sale_id'] . "\n";
+        $message .= "Branch: {$data['branch_name']}\n";
+        $message .= "Cashier: {$data['cashier_name']}\n";
+        $message .= "Customer: {$data['customer_name']}\n";
+        $message .= "Items: {$items}\n";
+        $message .= "Total: GHS {$data['total']}\n";
+        $message .= "Payment: " . strtoupper(str_replace('_', ' ', $data['payment_method'])) . "\n";
+        $message .= "Time: {$data['time']}";
+
+        return $this->send($phone, $message);
+    }
 }

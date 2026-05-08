@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Pos;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OwnerSaleAlertMail;
 use App\Mail\SaleReceiptMail;
 use App\Models\DayClosing;
 use App\Models\Item;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\User;
 use App\Services\ArkeselSmsService;
 use App\Services\MtnMomoService;
 use Illuminate\Http\Request;
@@ -188,6 +190,7 @@ class SaleController extends Controller
         if ($sale) {
             $sale->load('items', 'branch', 'cashier');
             $this->sendCustomerReceiptNotifications($sale);
+            $this->sendOwnerAlerts($sale);
         }
 
         return redirect()->route('pos.receipt', $sale->id)
@@ -230,6 +233,7 @@ class SaleController extends Controller
                 ]);
                 $sale->refresh()->load('items', 'branch', 'cashier');
                 $this->sendCustomerReceiptNotifications($sale);
+                $this->sendOwnerAlerts($sale);
             } elseif (in_array($momoStatus, ['FAILED', 'REJECTED', 'TIMEOUT'], true)) {
                 $sale->update([
                     'payment_status' => 'failed',
@@ -298,6 +302,7 @@ class SaleController extends Controller
                 ]);
                 $sale->refresh()->load('items', 'branch', 'cashier');
                 $this->sendCustomerReceiptNotifications($sale);
+                $this->sendOwnerAlerts($sale);
             } elseif (in_array($status, ['FAILED', 'REJECTED', 'TIMEOUT'], true)) {
                 $sale->update([
                     'payment_status' => 'failed',
@@ -315,6 +320,49 @@ class SaleController extends Controller
             ]);
 
             return response()->json(['ok' => false], 500);
+        }
+    }
+
+    private function sendOwnerAlerts(Sale $sale): void
+    {
+        $alertData = [
+            'sale_id'        => $sale->id,
+            'branch_name'    => $sale->branch->name,
+            'cashier_name'   => $sale->cashier->name,
+            'customer_name'  => $sale->customer_name,
+            'items'          => $sale->items->toArray(),
+            'discount'       => number_format($sale->discount, 2),
+            'total'          => number_format($sale->total, 2),
+            'payment_method' => $sale->payment_method,
+            'time'           => $sale->created_at->format('d M Y h:i A'),
+        ];
+
+        // Email all owners and superadmins
+        $owners = User::whereIn('role', ['owner', 'superadmin'])->whereNotNull('email')->get();
+        foreach ($owners as $owner) {
+            try {
+                Mail::to($owner->email)->send(new OwnerSaleAlertMail($sale));
+            } catch (\Throwable $e) {
+                Log::error('Owner sale alert email failed', [
+                    'sale_id' => $sale->id,
+                    'email'   => $owner->email,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // SMS each owner/superadmin who has a phone number set
+        $ownersWithPhone = User::whereIn('role', ['owner', 'superadmin'])->whereNotNull('phone')->where('phone', '!=', '')->get();
+        foreach ($ownersWithPhone as $owner) {
+            try {
+                (new ArkeselSmsService())->sendOwnerAlertSms($owner->phone, $alertData);
+            } catch (\Throwable $e) {
+                Log::error('Owner sale alert SMS failed', [
+                    'sale_id' => $sale->id,
+                    'phone'   => $owner->phone,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
         }
     }
 

@@ -14,7 +14,7 @@
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead>
-                <tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Branch</th><th></th></tr>
+                <tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Branch</th><th></th></tr>
             </thead>
             <tbody>
                 @forelse($users as $user)
@@ -22,6 +22,7 @@
                     <td>{{ $loop->iteration }}</td>
                     <td class="fw-semibold">{{ $user->name }}</td>
                     <td class="text-muted">{{ $user->email }}</td>
+                    <td class="text-muted">{{ $user->phone ?: '—' }}</td>
                     <td>
                         @if($user->role === 'superadmin')
                             <span class="badge bg-danger">Super Admin</span>
@@ -46,7 +47,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="text-center text-muted py-4">No users yet.</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-4">No users yet.</td></tr>
                 @endforelse
             </tbody>
         </table>

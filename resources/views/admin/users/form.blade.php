@@ -25,6 +25,13 @@
                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
 
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Phone <small class="text-muted">(used for SMS transaction alerts)</small></label>
+                <input type="text" name="phone" value="{{ old('phone', $user->phone) }}"
+                       class="form-control @error('phone') is-invalid @enderror" placeholder="e.g. 0244123456">
+                @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label fw-semibold">Password {{ isset($user->id) ? '(leave blank to keep)' : '' }} <span class="text-danger">*</span></label>
