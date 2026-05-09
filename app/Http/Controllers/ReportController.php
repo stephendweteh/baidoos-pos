@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Branch;
 use App\Models\Sale;
 use App\Models\User;
@@ -22,6 +23,8 @@ class ReportController extends Controller
         // Date range defaults to current month
         $from      = $request->get('from', today()->startOfMonth()->toDateString());
         $to        = $request->get('to',   today()->toDateString());
+        $staffFrom = $request->get('staff_from', $from);
+        $staffTo   = $request->get('staff_to', $to);
         $branchId  = $request->get('branch_id');
         $cashierId = $request->get('cashier_id');
 
@@ -55,11 +58,19 @@ class ReportController extends Controller
             ->with('branch')
             ->get();
 
-        // ── Daily trend ───────────────────────────────────────────
-        $daily = (clone $base)
-            ->selectRaw('sale_date, SUM(total) as revenue, SUM(discount) as discount, COUNT(*) as txns')
-            ->groupBy('sale_date')
-            ->orderBy('sale_date')
+        // ── Staff performance (services only) ────────────────────
+        $staffPerformance = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->join('branch_staff', 'sale_items.branch_staff_id', '=', 'branch_staff.id')
+            ->join('branches', 'sales.branch_id', '=', 'branches.id')
+            ->whereBetween('sales.sale_date', [$staffFrom, $staffTo])
+            ->when($branchId, fn ($q) => $q->where('sales.branch_id', $branchId))
+            ->when($cashierId, fn ($q) => $q->where('sales.user_id', $cashierId))
+            ->selectRaw('sales.sale_date as performance_date, sales.branch_id, branches.name as branch_name, sale_items.branch_staff_id, branch_staff.name as staff_name, SUM(sale_items.quantity) as services_rendered, SUM(sale_items.subtotal) as amount_made')
+            ->groupBy('sales.sale_date', 'sales.branch_id', 'branches.name', 'sale_items.branch_staff_id', 'branch_staff.name')
+            ->orderBy('sales.sale_date', 'desc')
+            ->orderBy('branches.name')
+            ->orderByDesc('amount_made')
             ->get();
 
         // ── Top 10 items ──────────────────────────────────────────
@@ -83,16 +94,106 @@ class ReportController extends Controller
             ->get();
 
         return view('reports.index', compact(
-            'from', 'to', 'branchId', 'cashierId', 'branches', 'cashiers',
+            'from', 'to', 'staffFrom', 'staffTo', 'branchId', 'cashierId', 'branches', 'cashiers',
             'totalRevenue', 'totalDiscount', 'totalTxns', 'avgTxn',
-            'byPayment', 'byBranch', 'daily', 'topItems', 'sales'
+            'byPayment', 'byBranch', 'staffPerformance', 'topItems', 'sales'
         ));
+    }
+
+    public function exportStaffPerformance(Request $request)
+    {
+        $from      = $request->get('from', today()->startOfMonth()->toDateString());
+        $to        = $request->get('to',   today()->toDateString());
+        $staffFrom = $request->get('staff_from', $from);
+        $staffTo   = $request->get('staff_to', $to);
+        $branchId  = $request->get('branch_id');
+        $cashierId = $request->get('cashier_id');
+
+        $rows = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->join('branch_staff', 'sale_items.branch_staff_id', '=', 'branch_staff.id')
+            ->join('branches', 'sales.branch_id', '=', 'branches.id')
+            ->whereBetween('sales.sale_date', [$staffFrom, $staffTo])
+            ->when($branchId, fn ($q) => $q->where('sales.branch_id', $branchId))
+            ->when($cashierId, fn ($q) => $q->where('sales.user_id', $cashierId))
+            ->selectRaw('sales.sale_date as performance_date, branches.name as branch_name, branch_staff.name as staff_name, SUM(sale_items.quantity) as services_rendered, SUM(sale_items.subtotal) as amount_made')
+            ->groupBy('sales.sale_date', 'branches.name', 'branch_staff.name')
+            ->orderBy('sales.sale_date', 'desc')
+            ->orderBy('branches.name')
+            ->orderByDesc('amount_made')
+            ->get();
+
+        $filename = 'staff-performance-' . $staffFrom . '-to-' . $staffTo . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($rows) {
+            $fh = fopen('php://output', 'w');
+
+            fputcsv($fh, [
+                'Date', 'Branch', 'Staff', 'Services Rendered', 'Revenue Made (GHS)',
+            ]);
+
+            foreach ($rows as $row) {
+                fputcsv($fh, [
+                    $row->performance_date,
+                    $row->branch_name,
+                    $row->staff_name,
+                    $row->services_rendered,
+                    number_format($row->amount_made, 2, '.', ''),
+                ]);
+            }
+
+            fclose($fh);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportStaffPerformancePdf(Request $request)
+    {
+        $from      = $request->get('from', today()->startOfMonth()->toDateString());
+        $to        = $request->get('to',   today()->toDateString());
+        $staffFrom = $request->get('staff_from', $from);
+        $staffTo   = $request->get('staff_to', $to);
+        $branchId  = $request->get('branch_id');
+        $cashierId = $request->get('cashier_id');
+
+        $rows = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->join('branch_staff', 'sale_items.branch_staff_id', '=', 'branch_staff.id')
+            ->join('branches', 'sales.branch_id', '=', 'branches.id')
+            ->whereBetween('sales.sale_date', [$staffFrom, $staffTo])
+            ->when($branchId, fn ($q) => $q->where('sales.branch_id', $branchId))
+            ->when($cashierId, fn ($q) => $q->where('sales.user_id', $cashierId))
+            ->selectRaw('sales.sale_date as performance_date, branches.name as branch_name, branch_staff.name as staff_name, SUM(sale_items.quantity) as services_rendered, SUM(sale_items.subtotal) as amount_made')
+            ->groupBy('sales.sale_date', 'branches.name', 'branch_staff.name')
+            ->orderBy('sales.sale_date', 'desc')
+            ->orderBy('branches.name')
+            ->orderByDesc('amount_made')
+            ->get();
+
+        $summary = [
+            'totalServices' => $rows->sum('services_rendered'),
+            'totalRevenue' => $rows->sum('amount_made'),
+            'totalRows' => $rows->count(),
+        ];
+
+        $pdf = Pdf::loadView('reports.staff-performance-pdf', [
+            'staffFrom' => $staffFrom,
+            'staffTo' => $staffTo,
+            'rows' => $rows,
+            'summary' => $summary,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('staff-performance-' . $staffFrom . '-to-' . $staffTo . '.pdf');
     }
 
     public function export(Request $request)
     {
-        $user = auth()->user();
-
         $from      = $request->get('from', today()->startOfMonth()->toDateString());
         $to        = $request->get('to',   today()->toDateString());
         $branchId  = $request->get('branch_id');
@@ -143,5 +244,39 @@ class ReportController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $from      = $request->get('from', today()->startOfMonth()->toDateString());
+        $to        = $request->get('to',   today()->toDateString());
+        $branchId  = $request->get('branch_id');
+        $cashierId = $request->get('cashier_id');
+
+        $base = Sale::query()
+            ->whereBetween('sale_date', [$from, $to])
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($cashierId, fn ($q) => $q->where('user_id', $cashierId));
+
+        $sales = (clone $base)
+            ->with('branch', 'cashier', 'items')
+            ->orderByDesc('sale_date')
+            ->orderByDesc('id')
+            ->get();
+
+        $summary = [
+            'totalRevenue' => (clone $base)->sum('total'),
+            'totalDiscount' => (clone $base)->sum('discount'),
+            'totalTxns' => (clone $base)->count(),
+        ];
+
+        $pdf = Pdf::loadView('reports.pdf', [
+            'from' => $from,
+            'to' => $to,
+            'sales' => $sales,
+            'summary' => $summary,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('sales-report-' . $from . '-to-' . $to . '.pdf');
     }
 }

@@ -66,6 +66,22 @@ class DashboardController extends Controller
                 ->get();
         }
 
+        // Staff performance by branch (services only)
+        $staffPerformanceByBranch = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->join('branch_staff', 'sale_items.branch_staff_id', '=', 'branch_staff.id')
+            ->join('branches', 'sales.branch_id', '=', 'branches.id')
+            ->whereDate('sales.sale_date', $date)
+            ->whereNotNull('sale_items.branch_staff_id')
+            ->when($user->isCashier(), fn ($q) => $q->where('sales.branch_id', $user->branch_id))
+            ->when($branch && $user->isOwner(), fn ($q) => $q->where('sales.branch_id', $branch))
+            ->when($cashierId, fn ($q) => $q->where('sales.user_id', $cashierId))
+            ->selectRaw('sales.branch_id, branches.name as branch_name, sale_items.branch_staff_id, branch_staff.name as staff_name, SUM(sale_items.quantity) as services_rendered, SUM(sale_items.subtotal) as amount_made')
+            ->groupBy('sales.branch_id', 'branches.name', 'sale_items.branch_staff_id', 'branch_staff.name')
+            ->orderBy('branches.name')
+            ->orderByDesc('amount_made')
+            ->get();
+
         // Recent 10 sales
         $recentSales = (clone $query)->latest()->limit(10)->get();
 
@@ -80,7 +96,7 @@ class DashboardController extends Controller
             'totalSales', 'transactionCount', 'cashSales',
             'momoSales', 'topItems',
             'salesByBranch', 'recentSales', 'branches', 'cashiers',
-            'date', 'branch', 'cashierId'
+            'staffPerformanceByBranch', 'date', 'branch', 'cashierId'
         ));
     }
 }

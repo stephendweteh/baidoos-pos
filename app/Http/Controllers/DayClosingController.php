@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\BranchStaff;
 use App\Models\DayClosing;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -140,13 +142,61 @@ class DayClosingController extends Controller
     /**
      * View a specific day closing report.
      */
-    public function show(DayClosing $dayClosing)
+    public function show(Request $request, DayClosing $dayClosing)
     {
         $user = auth()->user();
         if ($user->isCashier() && $dayClosing->branch_id !== $user->branch_id) {
             abort(403);
         }
-        $dayClosing->load('branch.businessType', 'closedBy', 'sales.items');
-        return view('day-closing.show', compact('dayClosing'));
+
+        $staffFilter = $request->integer('staff_id');
+        $branchStaff = BranchStaff::where('branch_id', $dayClosing->branch_id)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $dayClosing->load(['branch.businessType', 'closedBy', 'sales.items.staff']);
+
+        $serviceItems = SaleItem::query()
+            ->with(['sale', 'staff'])
+            ->whereHas('sale', function ($query) use ($dayClosing) {
+                $query->where('day_closing_id', $dayClosing->id);
+            })
+            ->whereHas('item', function ($query) {
+                $query->where('type', 'service');
+            })
+            ->when($staffFilter, function ($query) use ($staffFilter) {
+                $query->where('branch_staff_id', $staffFilter);
+            })
+            ->orderByDesc('id')
+            ->get();
+
+        $staffPerformance = SaleItem::query()
+            ->selectRaw('branch_staff_id, COUNT(*) as service_lines, SUM(quantity) as services_rendered, SUM(subtotal) as amount_made')
+            ->with('staff:id,name')
+            ->whereHas('sale', function ($query) use ($dayClosing) {
+                $query->where('day_closing_id', $dayClosing->id);
+            })
+            ->whereHas('item', function ($query) {
+                $query->where('type', 'service');
+            })
+            ->whereNotNull('branch_staff_id')
+            ->groupBy('branch_staff_id')
+            ->orderByDesc('amount_made')
+            ->get();
+
+        $filteredSummary = [
+            'services_rendered' => (int) $serviceItems->sum('quantity'),
+            'amount_made' => (float) $serviceItems->sum('subtotal'),
+            'service_lines' => $serviceItems->count(),
+        ];
+
+        return view('day-closing.show', compact(
+            'dayClosing',
+            'branchStaff',
+            'staffFilter',
+            'serviceItems',
+            'staffPerformance',
+            'filteredSummary'
+        ));
     }
 }

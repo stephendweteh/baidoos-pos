@@ -148,7 +148,7 @@ echo "✔ Patch created  : $OUTFILE"
 echo "✔ Deploy tag set : $TAG_NAME"
 echo ""
 echo "Files in patch:"
-unzip -l "$OUTFILE" | tail -n +4 | head -n -2 | awk '{print "  "$NF}'
+unzip -l "$OUTFILE" | awk 'NR>3 && $0 !~ /^--------/ && $0 !~ /files$|file$/ {print "  " $NF}'
 echo ""
 echo "Next steps:"
 echo "  1. Upload $OUTFILE to your cPanel server"

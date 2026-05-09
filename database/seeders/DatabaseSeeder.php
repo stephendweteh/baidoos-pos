@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Branch;
+use App\Models\BranchStaff;
 use App\Models\BusinessType;
 use App\Models\Item;
 use App\Models\User;
@@ -133,6 +134,14 @@ class DatabaseSeeder extends Seeder
             'password'  => Hash::make('password'),
             'role'      => 'cashier',
             'branch_id' => $b3->id,
+        ]);
+
+        BranchStaff::insert([
+            ['branch_id' => $b1->id, 'name' => 'Kojo', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['branch_id' => $b1->id, 'name' => 'Yaw', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['branch_id' => $b2->id, 'name' => 'Ama', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['branch_id' => $b2->id, 'name' => 'Esi', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['branch_id' => $b3->id, 'name' => 'Kwame', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 }

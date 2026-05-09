@@ -38,8 +38,12 @@ class ItemController extends Controller
             'name'      => 'required|string|max:100',
             'price'     => 'required|numeric|min:0',
             'type'      => 'required|in:service,product',
+            'assign_staff' => 'sometimes|boolean',
             'is_active' => 'sometimes|boolean',
         ]);
+        $data['assign_staff'] = $request->input('type') === 'service'
+            ? $request->boolean('assign_staff')
+            : false;
         $data['is_active'] = $request->boolean('is_active', true);
         Item::create($data);
         return redirect()->route('admin.items.index')
@@ -59,8 +63,12 @@ class ItemController extends Controller
             'name'      => 'required|string|max:100',
             'price'     => 'required|numeric|min:0',
             'type'      => 'required|in:service,product',
+            'assign_staff' => 'sometimes|boolean',
             'is_active' => 'sometimes|boolean',
         ]);
+        $data['assign_staff'] = $request->input('type') === 'service'
+            ? $request->boolean('assign_staff')
+            : false;
         $data['is_active'] = $request->boolean('is_active', true);
         $item->update($data);
         return redirect()->route('admin.items.index')

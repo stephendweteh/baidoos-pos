@@ -63,6 +63,9 @@
         <a href="{{ route('pos.sale') }}" class="nav-link @active('pos.sale')">
             <i class="bi bi-cart-plus"></i> New Sale
         </a>
+        <a href="{{ route('staff.index') }}" class="nav-link @active('staff.index')">
+            <i class="bi bi-person-lines-fill"></i> Service Staff
+        </a>
         @endif
 
         <div class="nav-section">Reports</div>
@@ -95,6 +98,9 @@
         <a href="{{ route('reports.index') }}" class="nav-link @active('reports.index')">
             <i class="bi bi-bar-chart-line"></i> Reports
         </a>
+        <a href="{{ route('staff.index') }}" class="nav-link @active('staff.index')">
+            <i class="bi bi-person-lines-fill"></i> Service Staff
+        </a>
         @endif
 
         @if(auth()->user()->isSuperAdmin())
@@ -119,6 +125,9 @@
         </a>
         <a href="{{ route('reports.index') }}" class="nav-link @active('reports.index')">
             <i class="bi bi-bar-chart-line"></i> Reports
+        </a>
+        <a href="{{ route('staff.index') }}" class="nav-link @active('staff.index')">
+            <i class="bi bi-person-lines-fill"></i> Service Staff
         </a>
         <a href="{{ route('superadmin.settings') }}" class="nav-link @active('superadmin.settings')">
             <i class="bi bi-gear-fill"></i> System Settings

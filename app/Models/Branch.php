@@ -26,6 +26,11 @@ class Branch extends Model
         return $this->hasMany(Item::class);
     }
 
+    public function staff()
+    {
+        return $this->hasMany(BranchStaff::class);
+    }
+
     public function sales()
     {
         return $this->hasMany(Sale::class);

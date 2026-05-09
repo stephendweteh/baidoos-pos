@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Pos;
 use App\Http\Controllers\Controller;
 use App\Mail\OwnerSaleAlertMail;
 use App\Mail\SaleReceiptMail;
+use App\Models\BranchStaff;
 use App\Models\DayClosing;
 use App\Models\Item;
 use App\Models\Sale;
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 
 class SaleController extends Controller
 {
@@ -60,8 +62,15 @@ class SaleController extends Controller
                 ->sum('total')
             : 0;
 
+        $branchStaff = $branch
+            ? BranchStaff::where('branch_id', $branch->id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name'])
+            : collect();
+
         return view('pos.sale', compact(
-            'branch', 'items', 'todayClosed', 'todaySales', 'todayTotal'
+            'branch', 'items', 'todayClosed', 'todaySales', 'todayTotal', 'branchStaff'
         ));
     }
 
@@ -84,6 +93,7 @@ class SaleController extends Controller
             'items'            => 'required|array|min:1',
             'items.*.id'       => 'required|exists:items,id',
             'items.*.qty'      => 'required|integer|min:1',
+            'items.*.staff_id' => 'nullable|exists:branch_staff,id',
             'payment_method'   => 'required|in:cash,mtn_momo',
             'discount'         => 'nullable|numeric|min:0',
             'customer_name'    => 'required|string|max:100',
@@ -111,15 +121,30 @@ class SaleController extends Controller
                     ->where('is_active', true)
                     ->firstOrFail();
 
+                $staffId = null;
+                if ($item->type === 'service' && $item->assign_staff) {
+                    $staffId = BranchStaff::where('id', $line['staff_id'] ?? null)
+                        ->where('branch_id', $branchId)
+                        ->where('is_active', true)
+                        ->value('id');
+
+                    if (!$staffId) {
+                        throw ValidationException::withMessages([
+                            'items' => ['Assigned staff member is required for each selected service.'],
+                        ]);
+                    }
+                }
+
                 $lineSubtotal = $item->price * $line['qty'];
                 $subtotal += $lineSubtotal;
 
                 $lineItems[] = [
-                    'item_id'    => $item->id,
-                    'item_name'  => $item->name,
-                    'item_price' => $item->price,
-                    'quantity'   => $line['qty'],
-                    'subtotal'   => $lineSubtotal,
+                    'item_id'         => $item->id,
+                    'branch_staff_id' => $staffId,
+                    'item_name'       => $item->name,
+                    'item_price'      => $item->price,
+                    'quantity'        => $line['qty'],
+                    'subtotal'        => $lineSubtotal,
                 ];
             }
 

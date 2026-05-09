@@ -2,6 +2,13 @@
 @section('title', 'POS — New Sale')
 @section('page-title', 'New Sale — ' . ($branch->name ?? ''))
 
+@php
+    $staffOptions = $branchStaff->map(fn ($staff) => [
+        'id' => $staff->id,
+        'name' => $staff->name,
+    ])->values();
+@endphp
+
 @push('styles')
 <style>
     /* Hide sidebar and collapse main-wrap on POS sale page */
@@ -61,12 +68,15 @@
                     @foreach($items->sortBy('name') as $item)
                     <div class="col-6 col-md-4 item-tile" data-name="{{ strtolower($item->name) }}">
                         <div class="btn-pos" id="tile-{{ $item->id }}"
-                             onclick="addToCart({{ $item->id }}, '{{ addslashes($item->name) }}', {{ $item->price }})">
+                             onclick="addToCart({{ $item->id }}, '{{ addslashes($item->name) }}', {{ $item->price }}, '{{ $item->type }}', {{ $item->assign_staff ? 'true' : 'false' }})">
                             <div class="fw-semibold" style="font-size:.9rem">{{ $item->name }}</div>
                             <div class="text-success fw-bold mt-1">GH₵ {{ number_format($item->price, 2) }}</div>
                             <div class="mt-1">
                                 @if($item->type === 'service')
                                     <span class="badge badge-service" style="font-size:.65rem">Service</span>
+                                    @if($item->assign_staff)
+                                        <span class="badge bg-info-subtle text-info-emphasis" style="font-size:.65rem">Assign Staff</span>
+                                    @endif
                                 @else
                                     <span class="badge badge-product" style="font-size:.65rem">Product</span>
                                 @endif
@@ -207,12 +217,13 @@
 @push('scripts')
 <script>
 let cart = {};
+const branchStaff = @json($staffOptions);
 
-function addToCart(id, name, price) {
+function addToCart(id, name, price, type, assignStaff) {
     if (cart[id]) {
         cart[id].qty++;
     } else {
-        cart[id] = { id, name, price, qty: 1 };
+        cart[id] = { id, name, price, qty: 1, type, assignStaff, staffId: '' };
     }
     document.getElementById('tile-' + id).classList.add('in-cart');
     renderCart();
@@ -241,19 +252,55 @@ function clearCart() {
     renderCart();
 }
 
+function updateStaff(id, staffId) {
+    if (!cart[id]) {
+        return;
+    }
+
+    cart[id].staffId = staffId;
+    syncHiddenInputs();
+}
+
+function getStaffOptions(selectedId) {
+    const baseOption = '<option value="">Select staff</option>';
+    return baseOption + branchStaff.map(staff => {
+        const selected = String(selectedId) === String(staff.id) ? 'selected' : '';
+        return `<option value="${staff.id}" ${selected}>${staff.name}</option>`;
+    }).join('');
+}
+
+function syncHiddenInputs() {
+    const hidden = document.getElementById('hiddenInputs');
+    let inputs = '';
+    let idx = 0;
+
+    Object.keys(cart).forEach(id => {
+        const item = cart[id];
+        inputs += `<input type="hidden" name="items[${idx}][id]" value="${id}">`;
+        inputs += `<input type="hidden" name="items[${idx}][qty]" value="${item.qty}">`;
+
+        if (item.assignStaff) {
+            inputs += `<input type="hidden" name="items[${idx}][staff_id]" value="${item.staffId}">`;
+        }
+
+        idx++;
+    });
+
+    hidden.innerHTML = inputs;
+}
+
 function renderCart() {
     const body   = document.getElementById('cartBody');
     const keys   = Object.keys(cart);
     const empty  = document.getElementById('cartEmpty');
     const table  = document.getElementById('cartTable');
     const btn    = document.getElementById('submitBtn');
-    const hidden = document.getElementById('hiddenInputs');
 
     if (keys.length === 0) {
         empty.style.display = '';
         table.style.display = 'none';
         btn.disabled = true;
-        hidden.innerHTML = '';
+        document.getElementById('hiddenInputs').innerHTML = '';
         updateTotal(0);
         return;
     }
@@ -264,30 +311,30 @@ function renderCart() {
 
     let subtotal = 0;
     let rows     = '';
-    let inputs   = '';
-    let idx      = 0;
 
     keys.forEach(id => {
         const item = cart[id];
         const lineTotal = item.price * item.qty;
         subtotal += lineTotal;
 
+        const staffSelector = item.assignStaff
+            ? `<div class="mt-2"><select class="form-select form-select-sm" onchange="updateStaff(${id}, this.value)" required>
+                    ${getStaffOptions(item.staffId)}
+               </select></div>`
+            : '';
+
         rows += `<tr>
-            <td style="font-size:.8rem">${item.name}<br><small class="text-muted">GH₵${item.price.toFixed(2)}</small></td>
+            <td style="font-size:.8rem">${item.name}<br><small class="text-muted">GH₵${item.price.toFixed(2)}</small>${staffSelector}</td>
             <td><input type="number" class="form-control form-control-sm" min="1" value="${item.qty}"
                        onchange="updateQty(${id}, this.value)" style="width:60px"></td>
             <td class="text-end fw-semibold" style="font-size:.85rem">GH₵ ${lineTotal.toFixed(2)}</td>
             <td><button type="button" class="btn btn-sm text-danger p-0 ps-1" onclick="removeFromCart(${id})">
                 <i class="bi bi-x-circle"></i></button></td>
         </tr>`;
-
-        inputs += `<input type="hidden" name="items[${idx}][id]"  value="${id}">`;
-        inputs += `<input type="hidden" name="items[${idx}][qty]" value="${item.qty}">`;
-        idx++;
     });
 
     body.innerHTML = rows;
-    hidden.innerHTML = inputs;
+    syncHiddenInputs();
     document.getElementById('subtotalDisplay').textContent = 'GH₵ ' + subtotal.toFixed(2);
     updateTotal(subtotal);
 }
@@ -329,7 +376,15 @@ document.querySelectorAll('.payment-method-input').forEach(el => {
 syncMomoRequirements();
 
 // Prevent double-submit
-document.getElementById('saleForm').addEventListener('submit', function () {
+document.getElementById('saleForm').addEventListener('submit', function (event) {
+    const missingAssignment = Object.values(cart).some(item => item.assignStaff && !item.staffId);
+    if (missingAssignment) {
+        event.preventDefault();
+        window.alert('Assign a staff member to each selected service before recording the sale.');
+        document.getElementById('submitBtn').disabled = false;
+        return;
+    }
+
     const selected = document.querySelector('input[name="payment_method"]:checked');
     const isMomo = selected && selected.value === 'mtn_momo';
     document.getElementById('submitBtn').disabled = true;

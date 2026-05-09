@@ -43,11 +43,18 @@
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label fw-semibold">Type <span class="text-danger">*</span></label>
-                    <select name="type" class="form-select @error('type') is-invalid @enderror">
+                    <select name="type" id="typeSelect" class="form-select @error('type') is-invalid @enderror" onchange="toggleAssignStaff()">
                         <option value="service" {{ old('type', $item->type) === 'service' ? 'selected' : '' }}>Service</option>
                         <option value="product" {{ old('type', $item->type) === 'product' ? 'selected' : '' }}>Product</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="mb-3 form-check form-switch" id="assignStaffWrap">
+                <input type="checkbox" class="form-check-input" name="assign_staff" id="assign_staff" value="1"
+                    {{ old('assign_staff', $item->assign_staff ?? false) ? 'checked' : '' }}>
+                <label class="form-check-label" for="assign_staff">Assign this service to a staff member during sale</label>
+                <div class="form-text">When enabled, the POS will show all staff in the selected branch for this service.</div>
             </div>
 
             <div class="mb-4 form-check">
@@ -67,4 +74,22 @@
 </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+function toggleAssignStaff() {
+    const isService = document.getElementById('typeSelect').value === 'service';
+    const wrapper = document.getElementById('assignStaffWrap');
+    const input = document.getElementById('assign_staff');
+
+    wrapper.style.display = isService ? '' : 'none';
+
+    if (!isService) {
+        input.checked = false;
+    }
+}
+
+toggleAssignStaff();
+</script>
+@endpush
 @endsection

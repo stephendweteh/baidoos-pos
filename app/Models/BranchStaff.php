@@ -5,14 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Item extends Model
+class BranchStaff extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['branch_id', 'name', 'price', 'type', 'assign_staff', 'is_active'];
+    protected $fillable = [
+        'branch_id', 'name', 'is_active',
+    ];
 
     protected $casts = [
-        'assign_staff' => 'boolean',
         'is_active' => 'boolean',
     ];
 
@@ -23,6 +24,6 @@ class Item extends Model
 
     public function saleItems()
     {
-        return $this->hasMany(SaleItem::class);
+        return $this->hasMany(SaleItem::class, 'branch_staff_id');
     }
 }

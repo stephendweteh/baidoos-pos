@@ -138,6 +138,47 @@
     </div>
 </div>
 
+{{-- Staff Performance By Branch --}}
+<div class="row g-3 mt-1">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-person-lines-fill text-primary"></i> Staff Services & Revenue By Branch
+            </div>
+            <div class="card-body p-0">
+                @if($staffPerformanceByBranch->isEmpty())
+                    <div class="text-center text-muted py-4" style="font-size:.85rem">No staff-assigned services for the selected filters.</div>
+                @else
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            @if(auth()->user()->isOwner())
+                                <th>Branch</th>
+                            @endif
+                            <th>Staff</th>
+                            <th class="text-end">Services Rendered</th>
+                            <th class="text-end">Revenue Made</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($staffPerformanceByBranch as $row)
+                        <tr>
+                            @if(auth()->user()->isOwner())
+                                <td style="font-size:.85rem">{{ $row->branch_name }}</td>
+                            @endif
+                            <td style="font-size:.85rem" class="fw-semibold">{{ $row->staff_name }}</td>
+                            <td class="text-end">{{ $row->services_rendered }}</td>
+                            <td class="text-end fw-semibold text-success">GH₵ {{ number_format($row->amount_made, 2) }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Quick Actions --}}
 <div class="row g-3 mt-2">
     <div class="col-12">

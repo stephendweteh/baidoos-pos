@@ -10,7 +10,7 @@ class SaleItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'sale_id', 'item_id', 'item_name', 'item_price', 'quantity', 'subtotal',
+        'sale_id', 'item_id', 'branch_staff_id', 'item_name', 'item_price', 'quantity', 'subtotal',
     ];
 
     public function sale()
@@ -21,5 +21,10 @@ class SaleItem extends Model
     public function item()
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function staff()
+    {
+        return $this->belongsTo(BranchStaff::class, 'branch_staff_id');
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DayClosingController;
 use App\Http\Controllers\Pos\SaleController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -44,10 +45,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/{dayClosing}', [DayClosingController::class, 'show'])->name('show');
     });
 
+    Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
+    Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
+    Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
+    Route::delete('/staff/{staff}', [StaffController::class, 'destroy'])->name('staff.destroy');
+
     // Reports — Owner & Superadmin
     Route::prefix('reports')->name('reports.')->middleware('role:owner')->group(function () {
         Route::get('/',       [ReportController::class, 'index'])->name('index');
         Route::get('/export', [ReportController::class, 'export'])->name('export');
+        Route::get('/export-pdf', [ReportController::class, 'exportPdf'])->name('export-pdf');
+        Route::get('/export-staff-performance', [ReportController::class, 'exportStaffPerformance'])->name('export-staff-performance');
+        Route::get('/export-staff-performance-pdf', [ReportController::class, 'exportStaffPerformancePdf'])->name('export-staff-performance-pdf');
     });
 
     // Admin — Owner Only
