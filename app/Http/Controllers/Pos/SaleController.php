@@ -463,7 +463,13 @@ class SaleController extends Controller
         $ownersWithPhone = User::whereIn('role', ['owner', 'superadmin'])->whereNotNull('phone')->where('phone', '!=', '')->get();
         foreach ($ownersWithPhone as $owner) {
             try {
-                (new ArkeselSmsService())->sendOwnerAlertSms($owner->phone, $alertData);
+                $smsSent = (new ArkeselSmsService())->sendOwnerAlertSms($owner->phone, $alertData);
+                if (!$smsSent) {
+                    Log::warning('Owner sale alert SMS returned false', [
+                        'sale_id' => $sale->id,
+                        'phone' => $owner->phone,
+                    ]);
+                }
             } catch (\Throwable $e) {
                 Log::error('Owner sale alert SMS failed', [
                     'sale_id' => $sale->id,
@@ -478,7 +484,7 @@ class SaleController extends Controller
     {
         if (!empty($sale->customer_phone)) {
             try {
-                (new ArkeselSmsService())->sendReceiptSms($sale->customer_phone, [
+                $smsSent = (new ArkeselSmsService())->sendReceiptSms($sale->customer_phone, [
                     'customer_name'  => $sale->customer_name,
                     'branch_name'    => $sale->branch->name,
                     'sale_id'        => $sale->id,
@@ -487,6 +493,12 @@ class SaleController extends Controller
                     'total'          => number_format($sale->total, 2),
                     'payment_method' => $sale->payment_method,
                 ]);
+                if (!$smsSent) {
+                    Log::warning('Receipt SMS returned false', [
+                        'sale_id' => $sale->id,
+                        'phone' => $sale->customer_phone,
+                    ]);
+                }
             } catch (\Throwable $e) {
                 Log::error('Receipt SMS failed to send', [
                     'sale_id' => $sale->id,
