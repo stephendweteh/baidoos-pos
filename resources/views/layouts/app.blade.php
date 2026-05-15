@@ -95,6 +95,9 @@
         <a href="{{ route('admin.customers.index') }}" class="nav-link @active('admin.customers.index')">
             <i class="bi bi-people"></i> Customers
         </a>
+        <a href="{{ route('admin.broadcasts.index') }}" class="nav-link @active('admin.broadcasts.index')">
+            <i class="bi bi-megaphone"></i> Broadcasts
+        </a>
         <a href="{{ route('admin.users.index') }}" class="nav-link @active('admin.users.index')">
             <i class="bi bi-people"></i> Users
         </a>
@@ -125,6 +128,9 @@
         </a>
         <a href="{{ route('admin.customers.index') }}" class="nav-link @active('admin.customers.index')">
             <i class="bi bi-people"></i> Customers
+        </a>
+        <a href="{{ route('admin.broadcasts.index') }}" class="nav-link @active('admin.broadcasts.index')">
+            <i class="bi bi-megaphone"></i> Broadcasts
         </a>
         <a href="{{ route('admin.users.index') }}" class="nav-link @active('admin.users.index')">
             <i class="bi bi-people"></i> Users

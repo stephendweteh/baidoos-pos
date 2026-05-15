@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\BranchController;
+use App\Http\Controllers\Admin\BroadcastController;
 use App\Http\Controllers\Admin\BusinessTypeController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\ItemController;
@@ -83,6 +84,12 @@ Route::middleware('auth')->group(function () {
         // Customers
         Route::resource('customers', CustomerController::class)
             ->except(['show']);
+
+        // Broadcasts
+        Route::resource('broadcasts', BroadcastController::class)
+            ->except(['edit', 'update']);
+        Route::post('broadcasts/{broadcast}/send', [BroadcastController::class, 'send'])
+            ->name('broadcasts.send');
     });
 
     // Super Admin Only
