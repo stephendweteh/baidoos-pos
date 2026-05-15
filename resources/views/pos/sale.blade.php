@@ -157,7 +157,7 @@
                     {{-- Customer Info with Autocomplete --}}
                     <div class="mb-2 position-relative">
                         <input type="hidden" id="customerId" name="customer_id" value="">
-                        <input type="text" id="customerSearch" class="form-control form-control-sm @error('customer_name') is-invalid @enderror"
+                        <input type="text" id="customerSearch" name="customer_name" class="form-control form-control-sm @error('customer_name') is-invalid @enderror"
                                placeholder="Customer name * (start typing to find existing customer)" required 
                                value="{{ old('customer_name') }}" autocomplete="off">
                         <div id="customerSuggestions" class="position-absolute w-100 bg-white border rounded shadow-sm" 
