@@ -154,10 +154,15 @@
                 </div>
 
                 <div class="card-footer bg-white">
-                    {{-- Customer Info --}}
-                    <div class="mb-2">
-                        <input type="text" name="customer_name" class="form-control form-control-sm @error('customer_name') is-invalid @enderror"
-                               placeholder="Customer name *" required value="{{ old('customer_name') }}">
+                    {{-- Customer Info with Autocomplete --}}
+                    <div class="mb-2 position-relative">
+                        <input type="hidden" id="customerId" name="customer_id" value="">
+                        <input type="text" id="customerSearch" class="form-control form-control-sm @error('customer_name') is-invalid @enderror"
+                               placeholder="Customer name * (start typing to find existing customer)" required 
+                               value="{{ old('customer_name') }}" autocomplete="off">
+                        <div id="customerSuggestions" class="position-absolute w-100 bg-white border rounded shadow-sm" 
+                             style="display:none; top:100%; z-index:1000; max-height:150px; overflow-y:auto">
+                        </div>
                         @error('customer_name')
                             <div class="invalid-feedback" style="font-size:.75rem">{{ $message }}</div>
                         @enderror
@@ -534,6 +539,75 @@ document.querySelectorAll('.payment-method-input').forEach(el => {
 });
 
 syncMomoRequirements();
+
+// ─── CUSTOMER AUTOCOMPLETE ───
+const customerSearch = document.getElementById('customerSearch');
+const customerSuggestions = document.getElementById('customerSuggestions');
+const customerPhoneInput = document.getElementById('customerPhoneInput');
+const customerEmailInput = document.querySelector('input[name="customer_email"]');
+const customerIdInput = document.getElementById('customerId');
+let autocompleteTimeout;
+
+customerSearch.addEventListener('input', function () {
+    const query = this.value.trim();
+    clearTimeout(autocompleteTimeout);
+
+    if (query.length < 2) {
+        customerSuggestions.style.display = 'none';
+        customerIdInput.value = '';
+        return;
+    }
+
+    // Debounce API call
+    autocompleteTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch(`/api/customers/search?q=${encodeURIComponent(query)}`);
+            const customers = await response.json();
+
+            if (!customers.length) {
+                customerSuggestions.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:.85rem">No customers found</div>';
+                customerSuggestions.style.display = 'block';
+                customerIdInput.value = '';
+                return;
+            }
+
+            customerSuggestions.innerHTML = customers.map(c => `
+                <div class="px-3 py-2 border-bottom" style="cursor:pointer; font-size:.85rem" 
+                     onclick="selectCustomer(${c.id}, '${escapeHtml(c.name)}', '${escapeHtml(c.phone)}', '${escapeHtml(c.email)}')">
+                    <div class="fw-semibold">${escapeHtml(c.name)}</div>
+                    <small class="text-muted">${c.phone ? '📞 ' + escapeHtml(c.phone) : ''} ${c.email ? '✉️ ' + escapeHtml(c.email) : ''}</small>
+                </div>
+            `).join('');
+
+            customerSuggestions.style.display = 'block';
+        } catch (error) {
+            console.error('Customer search error:', error);
+        }
+    }, 300);
+});
+
+function selectCustomer(id, name, phone, email) {
+    customerIdInput.value = id;
+    customerSearch.value = name;
+    customerPhoneInput.value = phone;
+    customerEmailInput.value = email;
+    customerSuggestions.style.display = 'none';
+}
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', function (e) {
+    if (e.target !== customerSearch && !customerSuggestions.contains(e.target)) {
+        customerSuggestions.style.display = 'none';
+    }
+});
+
+// Handle new customers (when autocomplete is not used)
+customerSearch.addEventListener('blur', function () {
+    if (!customerIdInput.value && this.value.trim()) {
+        // User typed a name but didn't select from suggestions - treat as new customer
+        customerIdInput.value = '';
+    }
+});
 
 // Prevent double-submit
 document.getElementById('saleForm').addEventListener('submit', function (event) {

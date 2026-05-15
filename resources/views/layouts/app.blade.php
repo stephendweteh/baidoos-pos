@@ -92,6 +92,9 @@
         <a href="{{ route('admin.items.index') }}" class="nav-link @active('admin.items.index')">
             <i class="bi bi-grid"></i> Items / Services
         </a>
+        <a href="{{ route('admin.customers.index') }}" class="nav-link @active('admin.customers.index')">
+            <i class="bi bi-people"></i> Customers
+        </a>
         <a href="{{ route('admin.users.index') }}" class="nav-link @active('admin.users.index')">
             <i class="bi bi-people"></i> Users
         </a>
@@ -119,6 +122,9 @@
         </a>
         <a href="{{ route('admin.items.index') }}" class="nav-link @active('admin.items.index')">
             <i class="bi bi-grid"></i> Items / Services
+        </a>
+        <a href="{{ route('admin.customers.index') }}" class="nav-link @active('admin.customers.index')">
+            <i class="bi bi-people"></i> Customers
         </a>
         <a href="{{ route('admin.users.index') }}" class="nav-link @active('admin.users.index')">
             <i class="bi bi-people"></i> Users

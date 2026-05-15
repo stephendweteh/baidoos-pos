@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\BusinessTypeController;
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\SuperAdminController;
 use App\Http\Controllers\Admin\UserController;
@@ -78,6 +79,10 @@ Route::middleware('auth')->group(function () {
         // Users
         Route::resource('users', UserController::class)
             ->except(['show']);
+
+        // Customers
+        Route::resource('customers', CustomerController::class)
+            ->except(['show']);
     });
 
     // Super Admin Only
@@ -89,6 +94,11 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post('/webhooks/mtn/momo', [SaleController::class, 'momoWebhook'])->name('webhooks.mtn.momo');
+
+// API Routes
+Route::prefix('api')->middleware('auth')->group(function () {
+    Route::get('/customers/search', [CustomerController::class, 'search'])->name('api.customers.search');
+});
 
 Auth::routes();
 
