@@ -90,16 +90,21 @@ class SaleController extends Controller
         }
 
         $request->validate([
-            'items'            => 'required|array|min:1',
-            'items.*.id'       => 'required|exists:items,id',
-            'items.*.qty'      => 'required|integer|min:1',
-            'items.*.staff_id' => 'nullable|exists:branch_staff,id',
-            'payment_method'   => 'required|in:cash,mtn_momo',
-            'discount'         => 'nullable|numeric|min:0',
-            'customer_name'    => 'required|string|max:100',
-            'customer_phone'   => 'nullable|string|max:20',
-            'customer_email'   => 'nullable|email|max:150',
-            'notes'            => 'nullable|string|max:255',
+            'items'              => 'required|array|min:1',
+            'items.*.id'         => 'nullable|exists:items,id',
+            'items.*.is_custom'  => 'nullable|boolean',
+            'items.*.custom_name'=> 'nullable|string|max:100',
+            'items.*.type'       => 'nullable|in:service,product',
+            'items.*.price'      => 'nullable|numeric|min:0',
+            'items.*.variation'  => 'nullable|string|max:80',
+            'items.*.qty'        => 'required|integer|min:1',
+            'items.*.staff_id'   => 'nullable|exists:branch_staff,id',
+            'payment_method'     => 'required|in:cash,mtn_momo',
+            'discount'           => 'nullable|numeric|min:0',
+            'customer_name'      => 'required|string|max:100',
+            'customer_phone'     => 'nullable|string|max:20',
+            'customer_email'     => 'nullable|email|max:150',
+            'notes'              => 'nullable|string|max:255',
         ]);
 
         if ($request->payment_method === 'mtn_momo' && !$request->filled('customer_phone')) {
@@ -116,11 +121,73 @@ class SaleController extends Controller
             $lineItems = [];
 
             foreach ($request->items as $line) {
+                $isCustom = filter_var($line['is_custom'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                $requestedQty = (int) ($line['qty'] ?? 0);
+                if ($requestedQty < 1) {
+                    throw ValidationException::withMessages([
+                        'items' => ['Each line item quantity must be at least 1.'],
+                    ]);
+                }
+
+                if ($isCustom) {
+                    $customName = trim((string) ($line['custom_name'] ?? ''));
+                    $customType = (string) ($line['type'] ?? 'service');
+                    $customPrice = (float) ($line['price'] ?? -1);
+                    $variation = trim((string) ($line['variation'] ?? ''));
+
+                    if ($customName === '' || !in_array($customType, ['service', 'product'], true) || $customPrice < 0) {
+                        throw ValidationException::withMessages([
+                            'items' => ['Each custom item must have a valid name, type, and price.'],
+                        ]);
+                    }
+
+                    $staffId = null;
+                    if ($customType === 'service' && !empty($line['staff_id'])) {
+                        $staffId = BranchStaff::where('id', $line['staff_id'])
+                            ->where('branch_id', $branchId)
+                            ->where('is_active', true)
+                            ->value('id');
+
+                        if (!$staffId) {
+                            throw ValidationException::withMessages([
+                                'items' => ['Selected staff member is not valid for this branch.'],
+                            ]);
+                        }
+                    }
+
+                    $displayName = $customName;
+                    if ($customType === 'service' && $variation !== '') {
+                        $displayName .= ' (' . $variation . ')';
+                    }
+
+                    $lineSubtotal = $customPrice * $requestedQty;
+                    $subtotal += $lineSubtotal;
+
+                    $lineItems[] = [
+                        'item_id'         => null,
+                        'branch_staff_id' => $staffId,
+                        'item_name'       => $displayName,
+                        'item_price'      => $customPrice,
+                        'quantity'        => $requestedQty,
+                        'subtotal'        => $lineSubtotal,
+                    ];
+
+                    continue;
+                }
+
+                if (empty($line['id'])) {
+                    throw ValidationException::withMessages([
+                        'items' => ['Each selected item must include a valid item ID.'],
+                    ]);
+                }
+
                 $item = Item::where('id', $line['id'])
                     ->where('branch_id', $branchId)
                     ->where('is_active', true)
+                    ->lockForUpdate()
                     ->firstOrFail();
 
+                $variation = trim((string) ($line['variation'] ?? ''));
                 $staffId = null;
                 if ($item->type === 'service' && $item->assign_staff) {
                     $staffId = BranchStaff::where('id', $line['staff_id'] ?? null)
@@ -135,15 +202,31 @@ class SaleController extends Controller
                     }
                 }
 
-                $lineSubtotal = $item->price * $line['qty'];
+                if ($item->type === 'product') {
+                    $availableStock = (int) ($item->stock_quantity ?? 0);
+                    if ($requestedQty > $availableStock) {
+                        throw ValidationException::withMessages([
+                            'items' => ["Not enough stock for {$item->name}. Available: {$availableStock}."],
+                        ]);
+                    }
+
+                    $item->decrement('stock_quantity', $requestedQty);
+                }
+
+                $lineSubtotal = $item->price * $requestedQty;
                 $subtotal += $lineSubtotal;
+
+                $displayName = $item->name;
+                if ($item->type === 'service' && $variation !== '') {
+                    $displayName .= ' (' . $variation . ')';
+                }
 
                 $lineItems[] = [
                     'item_id'         => $item->id,
                     'branch_staff_id' => $staffId,
-                    'item_name'       => $item->name,
+                    'item_name'       => $displayName,
                     'item_price'      => $item->price,
-                    'quantity'        => $line['qty'],
+                    'quantity'        => $requestedQty,
                     'subtotal'        => $lineSubtotal,
                 ];
             }

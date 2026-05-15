@@ -9,9 +9,10 @@ class Item extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['branch_id', 'name', 'price', 'type', 'assign_staff', 'is_active'];
+    protected $fillable = ['branch_id', 'name', 'price', 'type', 'stock_quantity', 'assign_staff', 'is_active'];
 
     protected $casts = [
+        'stock_quantity' => 'integer',
         'assign_staff' => 'boolean',
         'is_active' => 'boolean',
     ];

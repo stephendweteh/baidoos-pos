@@ -36,7 +36,15 @@
             <tbody>
                 @foreach($sale->items as $line)
                 <tr>
-                    <td>{{ $line->item_name }}</td>
+                    <td>
+                        {{ $line->item_name }}
+                        @if(is_null($line->item_id))
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1">Custom</span>
+                        @endif
+                        @if(preg_match('/\(.+\)\s*$/', $line->item_name))
+                            <span class="badge bg-info-subtle text-info-emphasis ms-1">Variation</span>
+                        @endif
+                    </td>
                     <td class="text-center">{{ $line->quantity }}</td>
                     <td class="text-end">GH₵ {{ number_format($line->subtotal, 2) }}</td>
                 </tr>

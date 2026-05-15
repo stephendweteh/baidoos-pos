@@ -26,6 +26,7 @@
                     <th>Name</th>
                     <th>Branch</th>
                     <th>Type</th>
+                    <th>Stock</th>
                     <th>Price</th>
                     <th>Status</th>
                     <th></th>
@@ -42,6 +43,13 @@
                             <span class="badge badge-service">Service</span>
                         @else
                             <span class="badge badge-product">Product</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($item->type === 'product')
+                            <span class="fw-semibold">{{ $item->stock_quantity ?? 0 }}</span>
+                        @else
+                            <span class="text-muted">N/A</span>
                         @endif
                     </td>
                     <td class="fw-semibold">GH₵ {{ number_format($item->price, 2) }}</td>
@@ -66,7 +74,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="text-center text-muted py-4">No items yet. Add one.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">No items yet. Add one.</td></tr>
                 @endforelse
             </tbody>
         </table>

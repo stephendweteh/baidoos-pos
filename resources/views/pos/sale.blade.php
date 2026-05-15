@@ -68,7 +68,7 @@
                     @foreach($items->sortBy('name') as $item)
                     <div class="col-6 col-md-4 item-tile" data-name="{{ strtolower($item->name) }}">
                         <div class="btn-pos" id="tile-{{ $item->id }}"
-                             onclick="addToCart({{ $item->id }}, '{{ addslashes($item->name) }}', {{ $item->price }}, '{{ $item->type }}', {{ $item->assign_staff ? 'true' : 'false' }})">
+                             onclick="addToCart({{ $item->id }}, '{{ addslashes($item->name) }}', {{ $item->price }}, '{{ $item->type }}', {{ (int) ($item->stock_quantity ?? 0) }}, {{ $item->assign_staff ? 'true' : 'false' }})">
                             <div class="fw-semibold" style="font-size:.9rem">{{ $item->name }}</div>
                             <div class="text-success fw-bold mt-1">GH₵ {{ number_format($item->price, 2) }}</div>
                             <div class="mt-1">
@@ -79,6 +79,11 @@
                                     @endif
                                 @else
                                     <span class="badge badge-product" style="font-size:.65rem">Product</span>
+                                    @if(($item->stock_quantity ?? 0) > 0)
+                                        <span class="badge bg-light text-dark" style="font-size:.65rem">Stock: {{ $item->stock_quantity }}</span>
+                                    @else
+                                        <span class="badge bg-danger" style="font-size:.65rem">Out of stock</span>
+                                    @endif
                                 @endif
                             </div>
                         </div>
@@ -103,6 +108,38 @@
                     </button>
                 </div>
                 <div class="card-body p-2">
+                    <div class="border rounded p-2 mb-2 bg-light-subtle">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <small class="fw-semibold text-uppercase text-muted">Custom Line Item</small>
+                            <small class="text-muted">For ad-hoc items or services</small>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <input type="text" id="customName" class="form-control form-control-sm" placeholder="Name">
+                            </div>
+                            <div class="col-md-3">
+                                <select id="customType" class="form-select form-select-sm">
+                                    <option value="service">Service</option>
+                                    <option value="product">Product</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" id="customPrice" class="form-control form-control-sm" min="0" step="0.01" placeholder="Price">
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" id="customQty" class="form-control form-control-sm" min="1" step="1" value="1" placeholder="Qty">
+                            </div>
+                            <div class="col-md-8">
+                                <input type="text" id="customVariation" class="form-control form-control-sm" placeholder="Variation (optional, e.g. Premium)">
+                            </div>
+                            <div class="col-md-4 d-grid">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addCustomToCart()">
+                                    <i class="bi bi-plus-circle"></i> Add Custom
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="cartEmpty" class="text-center text-muted py-3" style="font-size:.85rem">
                         <i class="bi bi-cart-x" style="font-size:2rem"></i><br>No items added yet
                     </div>
@@ -217,23 +254,123 @@
 @push('scripts')
 <script>
 let cart = {};
+let customCounter = 0;
 const branchStaff = @json($staffOptions);
 
-function addToCart(id, name, price, type, assignStaff) {
-    if (cart[id]) {
-        cart[id].qty++;
-    } else {
-        cart[id] = { id, name, price, qty: 1, type, assignStaff, staffId: '' };
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function addCustomToCart() {
+    const name = document.getElementById('customName').value.trim();
+    const type = document.getElementById('customType').value;
+    const price = parseFloat(document.getElementById('customPrice').value);
+    const qty = parseInt(document.getElementById('customQty').value || '1', 10);
+    const variation = document.getElementById('customVariation').value.trim();
+
+    if (!name) {
+        window.alert('Enter a custom item name.');
+        return;
     }
+
+    if (!['service', 'product'].includes(type)) {
+        window.alert('Select a valid custom item type.');
+        return;
+    }
+
+    if (isNaN(price) || price < 0) {
+        window.alert('Enter a valid custom item price.');
+        return;
+    }
+
+    if (isNaN(qty) || qty < 1) {
+        window.alert('Enter a valid custom quantity.');
+        return;
+    }
+
+    customCounter += 1;
+    const key = `custom-${customCounter}`;
+    cart[key] = {
+        id: null,
+        key,
+        name,
+        price,
+        qty,
+        type,
+        variation,
+        isCustom: true,
+        assignStaff: false,
+        stockQuantity: null,
+        staffId: ''
+    };
+
+    document.getElementById('customName').value = '';
+    document.getElementById('customPrice').value = '';
+    document.getElementById('customQty').value = '1';
+    document.getElementById('customVariation').value = '';
+    renderCart();
+}
+
+function addToCart(id, name, price, type, stockQuantity, assignStaff) {
+    const key = String(id);
+
+    if (type === 'product' && stockQuantity <= 0) {
+        window.alert('This product is out of stock.');
+        return;
+    }
+
+    if (cart[key]) {
+        if (cart[key].type === 'product' && cart[key].qty >= cart[key].stockQuantity) {
+            window.alert('Cannot add more than available stock.');
+            return;
+        }
+
+        cart[key].qty++;
+    } else {
+        cart[key] = {
+            id,
+            key,
+            name,
+            price,
+            qty: 1,
+            type,
+            variation: '',
+            stockQuantity,
+            assignStaff,
+            isCustom: false,
+            staffId: ''
+        };
+    }
+
     document.getElementById('tile-' + id).classList.add('in-cart');
     renderCart();
 }
 
 function updateQty(id, qty) {
     qty = parseInt(qty);
-    if (qty < 1) { removeFromCart(id); return; }
+    if (isNaN(qty) || qty < 1) { removeFromCart(id); return; }
+
+    if (cart[id].type === 'product' && cart[id].stockQuantity !== null && qty > cart[id].stockQuantity) {
+        window.alert('Quantity cannot be greater than available stock.');
+        qty = cart[id].stockQuantity;
+    }
+
     cart[id].qty = qty;
     renderCart();
+}
+
+function updateVariation(id, value) {
+    if (!cart[id]) {
+        return;
+    }
+
+    cart[id].variation = value;
+    syncHiddenInputs();
 }
 
 function removeFromCart(id) {
@@ -274,10 +411,20 @@ function syncHiddenInputs() {
     let inputs = '';
     let idx = 0;
 
-    Object.keys(cart).forEach(id => {
-        const item = cart[id];
-        inputs += `<input type="hidden" name="items[${idx}][id]" value="${id}">`;
+    Object.keys(cart).forEach(key => {
+        const item = cart[key];
+
+        if (item.isCustom) {
+            inputs += `<input type="hidden" name="items[${idx}][is_custom]" value="1">`;
+            inputs += `<input type="hidden" name="items[${idx}][custom_name]" value="${escapeHtml(item.name)}">`;
+            inputs += `<input type="hidden" name="items[${idx}][type]" value="${item.type}">`;
+            inputs += `<input type="hidden" name="items[${idx}][price]" value="${item.price}">`;
+        } else {
+            inputs += `<input type="hidden" name="items[${idx}][id]" value="${item.id}">`;
+        }
+
         inputs += `<input type="hidden" name="items[${idx}][qty]" value="${item.qty}">`;
+        inputs += `<input type="hidden" name="items[${idx}][variation]" value="${escapeHtml(item.variation || '')}">`;
 
         if (item.assignStaff) {
             inputs += `<input type="hidden" name="items[${idx}][staff_id]" value="${item.staffId}">`;
@@ -314,21 +461,34 @@ function renderCart() {
 
     keys.forEach(id => {
         const item = cart[id];
+        const safeId = escapeHtml(id);
         const lineTotal = item.price * item.qty;
         subtotal += lineTotal;
 
+        const stockHint = item.type === 'product' && item.stockQuantity !== null
+            ? `<div><small class="text-muted">In stock: ${item.stockQuantity}</small></div>`
+            : '';
+
+        const variationInput = item.type === 'service'
+            ? `<div class="mt-2"><input type="text" class="form-control form-control-sm" value="${escapeHtml(item.variation || '')}" placeholder="Variation (optional)" onchange="updateVariation('${safeId}', this.value)"></div>`
+            : '';
+
         const staffSelector = item.assignStaff
-            ? `<div class="mt-2"><select class="form-select form-select-sm" onchange="updateStaff(${id}, this.value)" required>
+            ? `<div class="mt-2"><select class="form-select form-select-sm" onchange="updateStaff('${safeId}', this.value)" required>
                     ${getStaffOptions(item.staffId)}
                </select></div>`
             : '';
 
+        const customBadge = item.isCustom
+            ? '<span class="badge bg-secondary-subtle text-secondary-emphasis">Custom</span>'
+            : '';
+
         rows += `<tr>
-            <td style="font-size:.8rem">${item.name}<br><small class="text-muted">GH₵${item.price.toFixed(2)}</small>${staffSelector}</td>
-            <td><input type="number" class="form-control form-control-sm" min="1" value="${item.qty}"
-                       onchange="updateQty(${id}, this.value)" style="width:60px"></td>
+            <td style="font-size:.8rem">${escapeHtml(item.name)} ${customBadge}<br><small class="text-muted">GH₵${item.price.toFixed(2)}</small>${stockHint}${variationInput}${staffSelector}</td>
+            <td><input type="number" class="form-control form-control-sm" min="1" ${item.type === 'product' && item.stockQuantity !== null ? `max="${item.stockQuantity}"` : ''} value="${item.qty}"
+                       onchange="updateQty('${safeId}', this.value)" style="width:60px"></td>
             <td class="text-end fw-semibold" style="font-size:.85rem">GH₵ ${lineTotal.toFixed(2)}</td>
-            <td><button type="button" class="btn btn-sm text-danger p-0 ps-1" onclick="removeFromCart(${id})">
+            <td><button type="button" class="btn btn-sm text-danger p-0 ps-1" onclick="removeFromCart('${safeId}')">
                 <i class="bi bi-x-circle"></i></button></td>
         </tr>`;
     });

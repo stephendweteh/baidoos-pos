@@ -44,7 +44,15 @@
                     <tbody>
                         @foreach($sale->items as $line)
                         <tr>
-                            <td style="padding:10px 8px; border-bottom:1px solid #f1f5f9;">{{ $line->item_name }}</td>
+                            <td style="padding:10px 8px; border-bottom:1px solid #f1f5f9;">
+                                {{ $line->item_name }}
+                                @if(is_null($line->item_id))
+                                    <span style="display:inline-block; margin-left:6px; padding:1px 6px; border-radius:999px; font-size:11px; font-weight:600; background:#e2e8f0; color:#334155;">Custom</span>
+                                @endif
+                                @if(preg_match('/\(.+\)\s*$/', $line->item_name))
+                                    <span style="display:inline-block; margin-left:6px; padding:1px 6px; border-radius:999px; font-size:11px; font-weight:600; background:#dbeafe; color:#1d4ed8;">Variation</span>
+                                @endif
+                            </td>
                             <td align="center" style="padding:10px 8px; border-bottom:1px solid #f1f5f9;">{{ $line->quantity }}</td>
                             <td align="right" style="padding:10px 8px; border-bottom:1px solid #f1f5f9;">GH₵ {{ number_format($line->subtotal, 2) }}</td>
                         </tr>

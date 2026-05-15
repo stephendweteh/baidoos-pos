@@ -43,11 +43,21 @@
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label fw-semibold">Type <span class="text-danger">*</span></label>
-                    <select name="type" id="typeSelect" class="form-select @error('type') is-invalid @enderror" onchange="toggleAssignStaff()">
+                    <select name="type" id="typeSelect" class="form-select @error('type') is-invalid @enderror" onchange="toggleItemTypeFields()">
                         <option value="service" {{ old('type', $item->type) === 'service' ? 'selected' : '' }}>Service</option>
                         <option value="product" {{ old('type', $item->type) === 'product' ? 'selected' : '' }}>Product</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="mb-3" id="stockQuantityWrap">
+                <label class="form-label fw-semibold">Stock Quantity <span class="text-danger">*</span></label>
+                <input type="number" name="stock_quantity" id="stock_quantity"
+                       value="{{ old('stock_quantity', $item->stock_quantity ?? 0) }}"
+                       class="form-control @error('stock_quantity') is-invalid @enderror"
+                       min="0" step="1" placeholder="0">
+                <div class="form-text">Set current units available for sale.</div>
+                @error('stock_quantity')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
 
             <div class="mb-3 form-check form-switch" id="assignStaffWrap">
@@ -77,19 +87,23 @@
 
 @push('scripts')
 <script>
-function toggleAssignStaff() {
+function toggleItemTypeFields() {
     const isService = document.getElementById('typeSelect').value === 'service';
-    const wrapper = document.getElementById('assignStaffWrap');
-    const input = document.getElementById('assign_staff');
+    const assignStaffWrap = document.getElementById('assignStaffWrap');
+    const assignStaffInput = document.getElementById('assign_staff');
+    const stockWrap = document.getElementById('stockQuantityWrap');
+    const stockInput = document.getElementById('stock_quantity');
 
-    wrapper.style.display = isService ? '' : 'none';
+    assignStaffWrap.style.display = isService ? '' : 'none';
+    stockWrap.style.display = isService ? 'none' : '';
+    stockInput.required = !isService;
 
     if (!isService) {
-        input.checked = false;
+        assignStaffInput.checked = false;
     }
 }
 
-toggleAssignStaff();
+toggleItemTypeFields();
 </script>
 @endpush
 @endsection
