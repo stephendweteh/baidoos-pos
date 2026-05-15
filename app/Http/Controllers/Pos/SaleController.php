@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\OwnerSaleAlertMail;
 use App\Mail\SaleReceiptMail;
 use App\Models\BranchStaff;
+use App\Models\Customer;
 use App\Models\DayClosing;
 use App\Models\Item;
 use App\Models\Sale;
@@ -102,6 +103,7 @@ class SaleController extends Controller
             'payment_method'     => 'required|in:cash,mtn_momo',
             'discount'           => 'nullable|numeric|min:0',
             'customer_name'      => 'required|string|max:100',
+            'customer_id'        => 'nullable|exists:customers,id',
             'customer_phone'     => 'nullable|string|max:20',
             'customer_email'     => 'nullable|email|max:150',
             'notes'              => 'nullable|string|max:255',
@@ -255,6 +257,8 @@ class SaleController extends Controller
                 $li['sale_id'] = $sale->id;
                 SaleItem::create($li);
             }
+
+            $this->syncCustomerDirectory($request);
         });
 
         if ($sale && $isMtnMomo) {
@@ -303,6 +307,66 @@ class SaleController extends Controller
 
         return redirect()->route('pos.receipt', $sale->id)
             ->with('success', 'Sale recorded successfully!');
+    }
+
+    private function syncCustomerDirectory(Request $request): void
+    {
+        $name = trim((string) $request->input('customer_name', ''));
+        if ($name === '') {
+            return;
+        }
+
+        $phone = trim((string) $request->input('customer_phone', ''));
+        $email = strtolower(trim((string) $request->input('customer_email', '')));
+
+        $customer = null;
+        $customerId = $request->input('customer_id');
+
+        if (!empty($customerId)) {
+            $customer = Customer::find($customerId);
+        }
+
+        if (!$customer && $phone !== '') {
+            $customer = Customer::where('phone', $phone)->first();
+        }
+
+        if (!$customer && $email !== '') {
+            $customer = Customer::whereRaw('LOWER(email) = ?', [$email])->first();
+        }
+
+        if (!$customer) {
+            $customer = Customer::whereRaw('LOWER(name) = ?', [strtolower($name)])->first();
+        }
+
+        if ($customer) {
+            $updates = [
+                'name' => $name,
+                'is_active' => true,
+            ];
+
+            if ($phone !== '' && $customer->phone !== $phone) {
+                $phoneOwner = Customer::where('phone', $phone)
+                    ->where('id', '!=', $customer->id)
+                    ->exists();
+                if (!$phoneOwner) {
+                    $updates['phone'] = $phone;
+                }
+            }
+
+            if ($email !== '') {
+                $updates['email'] = $email;
+            }
+
+            $customer->update($updates);
+            return;
+        }
+
+        Customer::create([
+            'name' => $name,
+            'phone' => $phone !== '' ? $phone : null,
+            'email' => $email !== '' ? $email : null,
+            'is_active' => true,
+        ]);
     }
 
     public function show(Sale $sale)
