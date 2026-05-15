@@ -7,6 +7,7 @@ use App\Models\Broadcast;
 use App\Models\Customer;
 use App\Services\ArkeselSmsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -32,10 +33,111 @@ class BroadcastController extends Controller
     public function create()
     {
         $customerCount = Customer::active()->count();
+
         return view('admin.broadcasts.form', [
             'broadcast' => new Broadcast(),
             'customerCount' => $customerCount,
+            'templateTypes' => [
+                'holiday' => 'Holiday Announcement',
+                'offday' => 'Off-Day / Public Holiday Notice',
+                'maintenance' => 'Maintenance / Downtime Alert',
+            ],
+            'templateTones' => [
+                'friendly' => 'Friendly',
+                'formal' => 'Formal',
+                'urgent' => 'Urgent',
+            ],
         ]);
+    }
+
+    /**
+     * Generate an AI-style message template that can be edited before saving.
+     */
+    public function generateTemplate(Request $request)
+    {
+        $data = $request->validate([
+            'template_type' => 'required|in:holiday,offday,maintenance',
+            'tone' => 'required|in:friendly,formal,urgent',
+            'event_name' => 'nullable|string|max:100',
+            'effective_date' => 'nullable|date',
+            'reopen_date' => 'nullable|date',
+            'extra_note' => 'nullable|string|max:220',
+        ]);
+
+        $businessName = config('app.name', 'Baidoos POS');
+        $eventName = trim((string) ($data['event_name'] ?? ''));
+        $extraNote = trim((string) ($data['extra_note'] ?? ''));
+        $effectiveDate = !empty($data['effective_date']) ? date('D, d M Y', strtotime($data['effective_date'])) : null;
+        $reopenDate = !empty($data['reopen_date']) ? date('D, d M Y', strtotime($data['reopen_date'])) : null;
+
+        [$title, $message, $channel] = $this->buildTemplate(
+            $data['template_type'],
+            $data['tone'],
+            $businessName,
+            $eventName,
+            $effectiveDate,
+            $reopenDate,
+            $extraNote
+        );
+
+        return response()->json([
+            'title' => Str::limit($title, 150, ''),
+            'message' => Str::limit($message, 1000, ''),
+            'channel' => $channel,
+        ]);
+    }
+
+    private function buildTemplate(
+        string $templateType,
+        string $tone,
+        string $businessName,
+        string $eventName,
+        ?string $effectiveDate,
+        ?string $reopenDate,
+        string $extraNote
+    ): array {
+        $friendlyGreeting = "Hello valued customers,";
+        $formalGreeting = "Dear customer,";
+        $urgentGreeting = "Important notice,";
+
+        $toneMap = [
+            'friendly' => [
+                'greeting' => $friendlyGreeting,
+                'closing' => 'Thank you for always choosing us.',
+            ],
+            'formal' => [
+                'greeting' => $formalGreeting,
+                'closing' => 'Thank you for your understanding and continued patronage.',
+            ],
+            'urgent' => [
+                'greeting' => $urgentGreeting,
+                'closing' => 'Please plan accordingly and contact us if you need assistance.',
+            ],
+        ];
+
+        $parts = $toneMap[$tone];
+        $nameSegment = $eventName !== '' ? " ({$eventName})" : '';
+        $effectiveSegment = $effectiveDate ? " on {$effectiveDate}" : '';
+        $reopenSegment = $reopenDate ? " We expect to resume normal service on {$reopenDate}." : '';
+        $extraSegment = $extraNote !== '' ? " {$extraNote}" : '';
+
+        if ($templateType === 'holiday') {
+            $title = "Holiday Notice{$nameSegment}";
+            $message = "{$parts['greeting']} {$businessName} wishes you a happy holiday. Please note that our operations may run on an adjusted schedule{$effectiveSegment}.{$reopenSegment}{$extraSegment} {$parts['closing']}";
+            $channel = 'both';
+        } elseif ($templateType === 'offday') {
+            $title = "Off-Day Schedule Update{$nameSegment}";
+            $message = "{$parts['greeting']} this is to inform you that {$businessName} will be closed{$effectiveSegment}.{$reopenSegment}{$extraSegment} {$parts['closing']}";
+            $channel = 'both';
+        } else {
+            $title = "Maintenance Update{$nameSegment}";
+            $message = "{$parts['greeting']} {$businessName} will undergo planned maintenance{$effectiveSegment}, which may temporarily affect service availability.{$reopenSegment}{$extraSegment} {$parts['closing']}";
+            $channel = 'sms';
+        }
+
+        $message = preg_replace('/\s+/', ' ', trim($message));
+
+        return [$title, $message, $channel];
     }
 
     /**
@@ -47,13 +149,21 @@ class BroadcastController extends Controller
             'title' => 'required|string|max:150',
             'message' => 'required|string|max:1000',
             'channel' => 'required|in:sms,email,both',
+            'submit_action' => 'nullable|in:draft,send_now',
         ]);
+
+        $submitAction = $data['submit_action'] ?? 'draft';
+        unset($data['submit_action']);
 
         $data['user_id'] = auth()->id();
         $data['status'] = 'draft';
         $data['total_recipients'] = Customer::active()->count();
 
-        Broadcast::create($data);
+        $broadcast = Broadcast::create($data);
+
+        if ($submitAction === 'send_now') {
+            return $this->send($broadcast);
+        }
 
         return redirect()->route('admin.broadcasts.index')
             ->with('success', 'Broadcast created as draft. Review and send when ready.');
@@ -97,7 +207,7 @@ class BroadcastController extends Controller
                 try {
                     $smsSent = $smsService->send(
                         $customer->phone,
-                        "[Broadcast] {$broadcast->title}\n\n{$broadcast->message}"
+                        $broadcast->message
                     );
 
                     if ($smsSent) {
@@ -123,9 +233,9 @@ class BroadcastController extends Controller
             // Send Email
             if (in_array($broadcast->channel, ['email', 'both']) && $customer->email) {
                 try {
-                    Mail::raw("{$broadcast->message}\n\n---\nBroadcast: {$broadcast->title}", function ($message) use ($customer, $broadcast) {
+                    Mail::raw($broadcast->message, function ($message) use ($customer, $broadcast) {
                         $message->to($customer->email)
-                                ->subject("[Broadcast] {$broadcast->title}");
+                                ->subject($broadcast->title);
                     });
 
                     $sentCount++;

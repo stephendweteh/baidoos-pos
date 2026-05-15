@@ -10,6 +10,55 @@
                 <form method="POST" action="{{ route('admin.broadcasts.store') }}">
                     @csrf
 
+                    {{-- AI Message Assistant --}}
+                    <div class="alert alert-primary border-0 mb-4" style="background:#eef5ff;">
+                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                            <div>
+                                <strong><i class="bi bi-stars"></i> AI Message Assistant</strong>
+                                <div class="text-muted" style="font-size:.85rem;">Generate a starter message, then edit it before saving.</div>
+                            </div>
+                            <button type="button" id="generateTemplateBtn" class="btn btn-sm btn-primary">
+                                <i class="bi bi-magic"></i> Generate Draft
+                            </button>
+                        </div>
+
+                        <div class="row g-2 mt-1">
+                            <div class="col-md-4">
+                                <label for="templateType" class="form-label mb-1" style="font-size:.85rem;">Template Type</label>
+                                <select id="templateType" class="form-select form-select-sm">
+                                    @foreach($templateTypes as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="templateTone" class="form-label mb-1" style="font-size:.85rem;">Tone</label>
+                                <select id="templateTone" class="form-select form-select-sm">
+                                    @foreach($templateTones as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="eventName" class="form-label mb-1" style="font-size:.85rem;">Event Name (Optional)</label>
+                                <input id="eventName" type="text" class="form-control form-control-sm" placeholder="E.g., Eid, Founder Day">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="effectiveDate" class="form-label mb-1" style="font-size:.85rem;">Effective Date</label>
+                                <input id="effectiveDate" type="date" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="reopenDate" class="form-label mb-1" style="font-size:.85rem;">Reopen Date</label>
+                                <input id="reopenDate" type="date" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="extraNote" class="form-label mb-1" style="font-size:.85rem;">Extra Note (Optional)</label>
+                                <input id="extraNote" type="text" class="form-control form-control-sm" placeholder="Any extra detail for customers">
+                            </div>
+                        </div>
+                        <small id="templateStatus" class="text-muted d-block mt-2"></small>
+                    </div>
+
                     {{-- Title --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Message Title <span class="text-danger">*</span></label>
@@ -78,8 +127,11 @@
 
                     {{-- Form Actions --}}
                     <div class="d-flex gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary flex-grow-1">
+                        <button type="submit" name="submit_action" value="draft" class="btn btn-primary flex-grow-1">
                             <i class="bi bi-megaphone"></i> Create as Draft
+                        </button>
+                        <button type="submit" name="submit_action" value="send_now" class="btn btn-success flex-grow-1">
+                            <i class="bi bi-send"></i> Send Now
                         </button>
                         <a href="{{ route('admin.broadcasts.index') }}" class="btn btn-outline-secondary">
                             Cancel
@@ -96,11 +148,67 @@
 </div>
 
 <script>
-document.querySelector('textarea[name="message"]').addEventListener('input', function () {
-    document.getElementById('charCount').textContent = this.value.length;
-});
+const messageField = document.querySelector('textarea[name="message"]');
+const titleField = document.querySelector('input[name="title"]');
+const charCount = document.getElementById('charCount');
+const templateStatus = document.getElementById('templateStatus');
+const generateBtn = document.getElementById('generateTemplateBtn');
 
-// Initialize char count
-document.getElementById('charCount').textContent = document.querySelector('textarea[name="message"]').value.length;
+function updateCharCount() {
+    charCount.textContent = messageField.value.length;
+}
+
+messageField.addEventListener('input', updateCharCount);
+updateCharCount();
+
+generateBtn.addEventListener('click', async function () {
+    templateStatus.textContent = 'Generating draft message...';
+    templateStatus.className = 'text-muted d-block mt-2';
+    generateBtn.disabled = true;
+
+    try {
+        const response = await fetch("{{ route('admin.broadcasts.generate-template') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                template_type: document.getElementById('templateType').value,
+                tone: document.getElementById('templateTone').value,
+                event_name: document.getElementById('eventName').value,
+                effective_date: document.getElementById('effectiveDate').value,
+                reopen_date: document.getElementById('reopenDate').value,
+                extra_note: document.getElementById('extraNote').value
+            })
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+            throw new Error(payload.message || 'Could not generate template.');
+        }
+
+        titleField.value = payload.title || '';
+        messageField.value = payload.message || '';
+
+        if (payload.channel) {
+            const targetChannel = document.querySelector(`input[name="channel"][value="${payload.channel}"]`);
+            if (targetChannel) {
+                targetChannel.checked = true;
+            }
+        }
+
+        updateCharCount();
+        templateStatus.textContent = 'Draft generated. You can edit title and message before saving.';
+        templateStatus.className = 'text-success d-block mt-2';
+    } catch (error) {
+        templateStatus.textContent = error.message || 'Failed to generate template.';
+        templateStatus.className = 'text-danger d-block mt-2';
+    } finally {
+        generateBtn.disabled = false;
+    }
+});
 </script>
 @endsection

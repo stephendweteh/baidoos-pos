@@ -88,6 +88,8 @@ Route::middleware('auth')->group(function () {
         // Broadcasts
         Route::resource('broadcasts', BroadcastController::class)
             ->except(['edit', 'update']);
+        Route::post('broadcasts/generate-template', [BroadcastController::class, 'generateTemplate'])
+            ->name('broadcasts.generate-template');
         Route::post('broadcasts/{broadcast}/send', [BroadcastController::class, 'send'])
             ->name('broadcasts.send');
     });
