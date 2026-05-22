@@ -15,6 +15,11 @@ class UserController extends Controller
         $this->middleware(['auth', 'role:owner']);
     }
 
+    protected function canManageRoles(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
+
     public function index()
     {
         $users = User::with('branch')->latest()->get();
@@ -29,13 +34,17 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        $canManageRoles = $this->canManageRoles();
+
         $data = $request->validate([
             'name'      => 'required|string|max:100',
             'email'     => 'required|email|unique:users,email',
             'phone'     => 'nullable|string|max:20',
             'password'  => 'required|string|min:6|confirmed',
-            'role'      => 'required|in:owner,cashier',
             'branch_id' => 'nullable|exists:branches,id',
+            'role'      => $canManageRoles
+                ? 'required|in:owner,cashier,superadmin'
+                : 'required|in:owner,cashier',
         ]);
 
         if ($data['role'] === 'cashier' && empty($data['branch_id'])) {
@@ -56,18 +65,24 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        $canManageRoles = $this->canManageRoles();
+
         $data = $request->validate([
             'name'      => 'required|string|max:100',
             'email'     => 'required|email|unique:users,email,' . $user->id,
             'phone'     => 'nullable|string|max:20',
             'password'  => 'nullable|string|min:6|confirmed',
-            'role'      => 'required|in:owner,cashier,superadmin',
             'branch_id' => 'nullable|exists:branches,id',
+            'role'      => $canManageRoles
+                ? 'required|in:owner,cashier,superadmin'
+                : 'sometimes|in:owner,cashier,superadmin',
         ]);
 
-        $isSuperAdmin = auth()->user()->isSuperAdmin();
+        if (!$canManageRoles) {
+            $data['role'] = $user->role;
+        }
 
-        if (!$isSuperAdmin && $data['role'] === 'cashier' && empty($data['branch_id'])) {
+        if ($data['role'] === 'cashier' && empty($data['branch_id'])) {
             return back()->withErrors(['branch_id' => 'Cashier must be assigned to a branch.'])->withInput();
         }
 

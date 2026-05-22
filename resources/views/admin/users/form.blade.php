@@ -3,6 +3,8 @@
 @section('page-title', isset($user->id) ? 'Edit User' : 'Add User')
 
 @section('content')
+@php($canManageRoles = auth()->user()->isSuperAdmin())
+@php($selectedRole = old('role', $user->role))
 <div class="row justify-content-center">
 <div class="col-lg-6">
 <div class="card border-0 shadow-sm">
@@ -48,18 +50,18 @@
 
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label class="form-label fw-semibold">Role @if(!auth()->user()->isSuperAdmin())<span class="text-danger">*</span>@endif</label>
-                    @if(isset($user->id) && $user->role === 'superadmin')
-                        {{-- Superadmin role cannot be changed via this form --}}
-                        <input type="text" class="form-control bg-light text-capitalize" value="Super Admin" disabled>
-                        <input type="hidden" name="role" value="superadmin">
+                    <label class="form-label fw-semibold">Role @if(!$canManageRoles)<span class="text-danger">*</span>@endif</label>
+                    @if(isset($user->id) && !$canManageRoles)
+                        <input type="text" class="form-control bg-light" value="{{ $selectedRole === 'superadmin' ? 'Super Admin' : ucfirst($selectedRole) }}" disabled>
+                        <input type="hidden" name="role" value="{{ $selectedRole }}">
                     @else
                     <select name="role" id="roleSelect" class="form-select @error('role') is-invalid @enderror"
                             onchange="toggleBranch()">
-                        @if(!auth()->user()->isSuperAdmin())
-                        <option value="cashier" {{ old('role', $user->role) === 'cashier' ? 'selected' : '' }}>Cashier</option>
+                        <option value="owner" {{ $selectedRole === 'owner' ? 'selected' : '' }}>Owner</option>
+                        <option value="cashier" {{ $selectedRole === 'cashier' ? 'selected' : '' }}>Cashier</option>
+                        @if($canManageRoles)
+                        <option value="superadmin" {{ $selectedRole === 'superadmin' ? 'selected' : '' }}>Super Admin</option>
                         @endif
-                        <option value="owner" {{ old('role', $user->role) === 'owner' ? 'selected' : '' }}>Owner</option>
                     </select>
                     @endif
                     @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -93,9 +95,24 @@
 
 @push('scripts')
 <script>
+function currentRole() {
+    const roleSelect = document.getElementById('roleSelect');
+    if (roleSelect) {
+        return roleSelect.value;
+    }
+
+    const hiddenRole = document.querySelector('input[name="role"][type="hidden"]');
+    return hiddenRole ? hiddenRole.value : 'owner';
+}
+
 function toggleBranch() {
-    const role = document.getElementById('roleSelect').value;
+    const role = currentRole();
     document.getElementById('branchField').style.display = role === 'owner' ? 'none' : '';
+}
+
+const roleSelect = document.getElementById('roleSelect');
+if (roleSelect) {
+    roleSelect.addEventListener('change', toggleBranch);
 }
 toggleBranch();
 </script>

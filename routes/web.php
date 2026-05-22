@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SuperAdminController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DayClosingController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Pos\SaleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StaffController;
@@ -30,6 +31,10 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Profile
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // POS
     Route::prefix('pos')->name('pos.')->group(function () {

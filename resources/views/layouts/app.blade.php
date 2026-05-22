@@ -157,6 +157,9 @@
             {{ auth()->user()->name }}
             <span class="badge bg-secondary ms-1" style="font-size:.6rem">{{ auth()->user()->role }}</span>
         </div>
+        <a href="{{ route('profile.edit') }}" class="btn btn-sm btn-outline-light w-100 mt-2" style="font-size:.75rem">
+            <i class="bi bi-person-gear"></i> My Profile
+        </a>
         <form method="POST" action="{{ route('logout') }}" class="mt-2">
             @csrf
             <button type="submit" class="btn btn-sm btn-outline-secondary w-100" style="font-size:.75rem">
