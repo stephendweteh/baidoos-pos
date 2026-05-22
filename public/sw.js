@@ -1,4 +1,4 @@
-const CACHE_NAME = "baidoos-pos-v1";
+const CACHE_NAME = "baidoos-pos-v2";
 const STATIC_ASSETS = [
   "/",
   "/manifest.webmanifest",
