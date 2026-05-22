@@ -12,7 +12,7 @@ class Sale extends Model
     protected $fillable = [
         'branch_id', 'user_id', 'day_closing_id', 'sale_date',
         'subtotal', 'discount', 'total', 'payment_method',
-        'payment_status', 'payment_reference', 'momo_status', 'payer_msisdn',
+        'payment_status', 'payment_reference', 'momo_status', 'payer_msisdn', 'momo_ref',
         'customer_name', 'customer_phone', 'customer_email', 'notes',
     ];
 

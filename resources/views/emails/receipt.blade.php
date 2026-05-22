@@ -19,6 +19,13 @@
                 <p style="margin:0 0 20px; font-size:15px;">Thank you for your payment. Here is your receipt for sale #{{ $sale->id }}.</p>
 
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px; font-size:14px;">
+                    @php
+                        $paymentLabel = match ($sale->payment_method) {
+                            'mobile_money' => 'Mobile Money',
+                            'mtn_momo' => 'MTN MoMo',
+                            default => strtoupper(str_replace('_', ' ', $sale->payment_method)),
+                        };
+                    @endphp
                     <tr>
                         <td style="padding:6px 0; color:#6b7280;">Branch</td>
                         <td style="padding:6px 0; text-align:right; font-weight:600;">{{ $sale->branch->name }}</td>
@@ -29,8 +36,14 @@
                     </tr>
                     <tr>
                         <td style="padding:6px 0; color:#6b7280;">Payment Method</td>
-                        <td style="padding:6px 0; text-align:right; font-weight:600; text-transform:uppercase;">{{ $sale->payment_method }}</td>
+                        <td style="padding:6px 0; text-align:right; font-weight:600;">{{ $paymentLabel }}</td>
                     </tr>
+                    @if(in_array($sale->payment_method, ['mobile_money', 'mtn_momo'], true) && $sale->momo_ref)
+                    <tr>
+                        <td style="padding:6px 0; color:#6b7280;">MoMo Ref</td>
+                        <td style="padding:6px 0; text-align:right; font-weight:600;">{{ $sale->momo_ref }}</td>
+                    </tr>
+                    @endif
                 </table>
 
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-bottom:20px; font-size:14px;">

@@ -37,6 +37,7 @@
                 <th class="right">Discount</th>
                 <th class="right">Total</th>
                 <th>Payment</th>
+                <th>MoMo Ref</th>
                 <th>Cashier</th>
             </tr>
         </thead>
@@ -51,12 +52,13 @@
                     <td class="right">{{ number_format($sale->subtotal, 2) }}</td>
                     <td class="right">{{ number_format($sale->discount, 2) }}</td>
                     <td class="right">{{ number_format($sale->total, 2) }}</td>
-                    <td>{{ strtoupper($sale->payment_method) }}</td>
+                    <td>{{ strtoupper(str_replace('_', ' ', $sale->payment_method)) }}</td>
+                    <td>{{ $sale->momo_ref ?? '-' }}</td>
                     <td>{{ $sale->cashier->name ?? '' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10">No sales in this period.</td>
+                    <td colspan="11">No sales in this period.</td>
                 </tr>
             @endforelse
         </tbody>

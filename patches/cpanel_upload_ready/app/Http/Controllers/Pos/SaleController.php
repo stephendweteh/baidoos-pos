@@ -100,8 +100,7 @@ class SaleController extends Controller
             'items.*.variation'  => 'nullable|string|max:80',
             'items.*.qty'        => 'required|integer|min:1',
             'items.*.staff_id'   => 'nullable|exists:branch_staff,id',
-            'payment_method'     => 'required|in:cash,mobile_money,mtn_momo',
-            'momo_ref'           => 'required_if:payment_method,mobile_money|nullable|string|max:100',
+            'payment_method'     => 'required|in:cash,mtn_momo',
             'discount'           => 'nullable|numeric|min:0',
             'customer_name'      => 'required|string|max:100',
             'customer_id'        => 'nullable|exists:customers,id',
@@ -113,12 +112,6 @@ class SaleController extends Controller
         if ($request->payment_method === 'mtn_momo' && !$request->filled('customer_phone')) {
             return back()->withInput()->withErrors([
                 'customer_phone' => 'Customer phone is required for MTN MoMo payment.',
-            ]);
-        }
-
-        if ($request->payment_method === 'mobile_money' && !$request->filled('momo_ref')) {
-            return back()->withInput()->withErrors([
-                'momo_ref' => 'MoMo Ref / Transaction ID is required for Mobile Money payment.',
             ]);
         }
 
@@ -252,7 +245,6 @@ class SaleController extends Controller
                 'discount'       => $discount,
                 'total'          => $total,
                 'payment_method' => $request->payment_method,
-                'momo_ref'       => $request->payment_method === 'mobile_money' ? $request->momo_ref : null,
                 'customer_name'  => $request->customer_name,
                 'customer_phone' => $request->customer_phone,
                 'customer_email' => $request->customer_email,

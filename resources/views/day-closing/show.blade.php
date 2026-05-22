@@ -173,7 +173,7 @@
     <div class="card-body p-0">
         <table class="table table-sm mb-0">
             <thead>
-                <tr><th>#</th><th>Time</th><th>Customer</th><th>Items</th><th>Payment</th><th class="text-end">Total</th></tr>
+                <tr><th>#</th><th>Time</th><th>Customer</th><th>Items</th><th>Payment</th><th>MoMo Ref</th><th class="text-end">Total</th></tr>
             </thead>
             <tbody>
                 @foreach($dayClosing->sales as $sale)
@@ -186,14 +186,15 @@
                             <small>{{ $li->item_name }} ×{{ $li->quantity }}</small>{{ !$loop->last ? ', ' : '' }}
                         @endforeach
                     </td>
-                    <td class="text-uppercase" style="font-size:.8rem">{{ $sale->payment_method }}</td>
+                    <td class="text-uppercase" style="font-size:.8rem">{{ str_replace('_', ' ', $sale->payment_method) }}</td>
+                    <td style="font-size:.8rem">{{ $sale->momo_ref ?? '—' }}</td>
                     <td class="text-end fw-semibold">GH₵ {{ number_format($sale->total, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>
             <tfoot>
                 <tr class="fw-bold">
-                    <td colspan="5" class="text-end">Grand Total</td>
+                    <td colspan="6" class="text-end">Grand Total</td>
                     <td class="text-end text-success">GH₵ {{ number_format($dayClosing->total_sales, 2) }}</td>
                 </tr>
             </tfoot>

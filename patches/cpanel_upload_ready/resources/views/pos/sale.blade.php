@@ -200,26 +200,13 @@
 
                     {{-- Payment Method --}}
                     <div class="btn-group w-100 mb-1" role="group">
-                        @foreach(['cash' => 'Cash', 'mobile_money' => 'Mobile Money', 'mtn_momo' => 'MTN MoMo'] as $val => $label)
+                        @foreach(['cash' => 'Cash', 'mtn_momo' => 'MTN MoMo'] as $val => $label)
                         <input type="radio" class="btn-check payment-method-input" name="payment_method"
                                id="pm_{{ $val }}" value="{{ $val }}" {{ $val === 'cash' ? 'checked' : '' }}>
                         <label class="btn btn-outline-secondary btn-sm" for="pm_{{ $val }}">{{ $label }}</label>
                         @endforeach
                     </div>
-
-                    {{-- Mobile Money Ref (shown for generic Mobile Money) --}}
-                    <div id="momoRefField" class="mb-2 mt-1" style="display:none">
-                        <input type="text" name="momo_ref" id="momoRefInput"
-                               class="form-control form-control-sm @error('momo_ref') is-invalid @enderror"
-                               placeholder="MoMo Ref / Transaction ID" maxlength="100">
-                        <small class="text-muted" style="font-size:.72rem">Enter the transaction reference for this mobile money payment.</small>
-                        @error('momo_ref')
-                            <div class="invalid-feedback" style="font-size:.75rem">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    {{-- MTN MoMo automated prompt info --}}
-                    <div id="momoHelp" class="alert alert-info py-1 px-2 mb-2" style="font-size:.75rem; display:none">
+                    <div id="momoHelp" class="alert alert-info py-1 px-2 mb-3" style="font-size:.75rem; display:none">
                         When you click Record Sale, customer will receive an MTN prompt on phone to enter PIN.
                     </div>
 
@@ -537,21 +524,14 @@ function filterItems() {
 
 function syncMomoRequirements() {
     const selected = document.querySelector('input[name="payment_method"]:checked');
-    const val = selected ? selected.value : 'cash';
-    const isMtnMomo = val === 'mtn_momo';
-    const isMobileMoney = val === 'mobile_money';
+    const isMomo = selected && selected.value === 'mtn_momo';
     const phoneInput = document.getElementById('customerPhoneInput');
     const momoHelp = document.getElementById('momoHelp');
     const momoPhoneHint = document.getElementById('momoPhoneHint');
-    const momoRefField = document.getElementById('momoRefField');
-    const momoRefInput = document.getElementById('momoRefInput');
 
-    phoneInput.required = isMtnMomo;
-    momoHelp.style.display = isMtnMomo ? '' : 'none';
-    momoPhoneHint.style.display = isMtnMomo ? '' : 'none';
-    momoRefField.style.display = isMobileMoney ? '' : 'none';
-    momoRefInput.required = isMobileMoney;
-    if (!isMobileMoney) document.getElementById('momoRefInput').value = '';
+    phoneInput.required = !!isMomo;
+    momoHelp.style.display = isMomo ? '' : 'none';
+    momoPhoneHint.style.display = isMomo ? '' : 'none';
 }
 
 document.querySelectorAll('.payment-method-input').forEach(el => {

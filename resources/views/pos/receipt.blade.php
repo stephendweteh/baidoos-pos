@@ -29,6 +29,14 @@
             @endif
         </div>
 
+        @php
+            $paymentLabel = match ($sale->payment_method) {
+                'mobile_money' => 'Mobile Money',
+                'mtn_momo' => 'MTN MoMo',
+                default => strtoupper(str_replace('_', ' ', $sale->payment_method)),
+            };
+        @endphp
+
         <table class="table table-sm receipt-table">
             <thead>
                 <tr><th>Item</th><th class="text-center">Qty</th><th class="text-end">Amount</th></tr>
@@ -62,7 +70,13 @@
                     <td class="text-end text-primary fs-6">GH₵ {{ number_format($sale->total, 2) }}</td>
                 </tr>
                 <tr><td colspan="2" class="text-end text-muted">Payment</td>
-                    <td class="text-end text-uppercase">{{ $sale->payment_method }}</td></tr>
+                    <td class="text-end">{{ $paymentLabel }}</td></tr>
+                @if(in_array($sale->payment_method, ['mobile_money', 'mtn_momo'], true) && $sale->momo_ref)
+                <tr>
+                    <td colspan="2" class="text-end text-muted">MoMo Ref</td>
+                    <td class="text-end text-break">{{ $sale->momo_ref }}</td>
+                </tr>
+                @endif
                 @if($sale->payment_method === 'mtn_momo')
                 <tr>
                     <td colspan="2" class="text-end text-muted">MoMo Status</td>
