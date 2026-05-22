@@ -1,0 +1,6 @@
+Mobile Money Ref patch for cPanel
+
+1. Upload cpanel_momo_ref_update.zip to the server.
+2. Unzip it in your Laravel app root.
+3. Run: php artisan migrate --force
+4. Run: php artisan config:clear && php artisan cache:clear && php artisan view:clear && php artisan route:clear

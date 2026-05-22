@@ -1,0 +1,5 @@
+# New migrations in this patch
+# Run: php artisan migrate --force
+
+database/migrations/2026_05_22_000001_add_momo_ref_to_sales_table.php
+database/migrations/2026_05_22_000002_add_mobile_money_to_payment_method_enum.php
