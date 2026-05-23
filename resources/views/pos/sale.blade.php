@@ -123,6 +123,14 @@
                                     <option value="product">Product</option>
                                 </select>
                             </div>
+                            <div class="col-md-4" id="customStaffWrap">
+                                <select id="customStaff" class="form-select form-select-sm">
+                                    <option value="">Select staff (optional)</option>
+                                    @foreach($branchStaff as $staff)
+                                        <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                             <div class="col-md-2">
                                 <input type="number" id="customPrice" class="form-control form-control-sm" min="0" step="0.01" placeholder="Price">
                             </div>
@@ -287,6 +295,7 @@ function escapeHtml(value) {
 function addCustomToCart() {
     const name = document.getElementById('customName').value.trim();
     const type = document.getElementById('customType').value;
+    const staffId = document.getElementById('customStaff').value;
     const price = parseFloat(document.getElementById('customPrice').value);
     const qty = parseInt(document.getElementById('customQty').value || '1', 10);
     const variation = document.getElementById('customVariation').value.trim();
@@ -324,14 +333,27 @@ function addCustomToCart() {
         isCustom: true,
         assignStaff: false,
         stockQuantity: null,
-        staffId: ''
+        staffId: type === 'service' ? staffId : ''
     };
 
     document.getElementById('customName').value = '';
     document.getElementById('customPrice').value = '';
     document.getElementById('customQty').value = '1';
     document.getElementById('customVariation').value = '';
+    document.getElementById('customStaff').value = '';
     renderCart();
+}
+
+function syncCustomStaffVisibility() {
+    const customType = document.getElementById('customType').value;
+    const customStaffWrap = document.getElementById('customStaffWrap');
+    const customStaff = document.getElementById('customStaff');
+    const showStaff = customType === 'service';
+
+    customStaffWrap.style.display = showStaff ? '' : 'none';
+    if (!showStaff) {
+        customStaff.value = '';
+    }
 }
 
 function addToCart(id, name, price, type, stockQuantity, assignStaff) {
@@ -444,7 +466,7 @@ function syncHiddenInputs() {
         inputs += `<input type="hidden" name="items[${idx}][qty]" value="${item.qty}">`;
         inputs += `<input type="hidden" name="items[${idx}][variation]" value="${escapeHtml(item.variation || '')}">`;
 
-        if (item.assignStaff) {
+        if (item.assignStaff || (item.isCustom && item.type === 'service' && item.staffId)) {
             inputs += `<input type="hidden" name="items[${idx}][staff_id]" value="${item.staffId}">`;
         }
 
@@ -558,7 +580,10 @@ document.querySelectorAll('.payment-method-input').forEach(el => {
     el.addEventListener('change', syncMomoRequirements);
 });
 
+document.getElementById('customType').addEventListener('change', syncCustomStaffVisibility);
+
 syncMomoRequirements();
+syncCustomStaffVisibility();
 
 // ─── CUSTOMER AUTOCOMPLETE ───
 const customerSearch = document.getElementById('customerSearch');

@@ -42,9 +42,14 @@
 
         <div class="mb-3">
             <label class="form-label fw-semibold">Password</label>
-            <input type="password" name="password"
-                   class="form-control @error('password') is-invalid @enderror"
-                   placeholder="••••••••" required>
+            <div class="input-group">
+                <input type="password" name="password" id="passwordInput"
+                       class="form-control @error('password') is-invalid @enderror"
+                       placeholder="••••••••" required>
+                <button type="button" class="btn btn-outline-secondary" id="togglePasswordBtn" aria-label="Show password">
+                    <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                </button>
+            </div>
             @error('password')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -64,6 +69,23 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    (function () {
+        const passwordInput = document.getElementById('passwordInput');
+        const toggleButton = document.getElementById('togglePasswordBtn');
+        const toggleIcon = document.getElementById('togglePasswordIcon');
+
+        if (!passwordInput || !toggleButton || !toggleIcon) {
+            return;
+        }
+
+        toggleButton.addEventListener('click', function () {
+            const shouldShow = passwordInput.type === 'password';
+            passwordInput.type = shouldShow ? 'text' : 'password';
+            toggleButton.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
+            toggleIcon.className = shouldShow ? 'bi bi-eye-slash' : 'bi bi-eye';
+        });
+    })();
+
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
             navigator.serviceWorker.register("{{ asset('sw.js') }}").catch(function () {
