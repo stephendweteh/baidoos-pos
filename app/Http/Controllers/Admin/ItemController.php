@@ -39,12 +39,14 @@ class ItemController extends Controller
             'price'          => 'required|numeric|min:0',
             'type'           => 'required|in:service,product',
             'stock_quantity' => 'nullable|required_if:type,product|integer|min:0',
+            'assign_staff'   => 'sometimes|boolean',
             'is_active'      => 'sometimes|boolean',
         ]);
 
         $data['stock_quantity'] = $data['type'] === 'product'
             ? (int) ($data['stock_quantity'] ?? 0)
             : null;
+        $data['assign_staff'] = $request->boolean('assign_staff', false);
         $data['is_active'] = $request->boolean('is_active', true);
         Item::create($data);
         return redirect()->route('admin.items.index')
@@ -65,12 +67,14 @@ class ItemController extends Controller
             'price'          => 'required|numeric|min:0',
             'type'           => 'required|in:service,product',
             'stock_quantity' => 'nullable|required_if:type,product|integer|min:0',
+            'assign_staff'   => 'sometimes|boolean',
             'is_active'      => 'sometimes|boolean',
         ]);
 
         $data['stock_quantity'] = $data['type'] === 'product'
             ? (int) ($data['stock_quantity'] ?? 0)
             : null;
+        $data['assign_staff'] = $request->boolean('assign_staff', false);
         $data['is_active'] = $request->boolean('is_active', true);
         $item->update($data);
         return redirect()->route('admin.items.index')
