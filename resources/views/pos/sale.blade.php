@@ -513,8 +513,9 @@ function renderCart() {
             ? `<div class="mt-2"><input type="text" class="form-control form-control-sm" value="${escapeHtml(item.variation || '')}" placeholder="Variation (optional)" onchange="updateVariation('${safeId}', this.value)"></div>`
             : '';
 
-        const staffSelector = item.assignStaff
-            ? `<div class="mt-2"><select class="form-select form-select-sm" onchange="updateStaff('${safeId}', this.value)" required>
+        const showStaffSelector = item.assignStaff || (item.isCustom && item.type === 'service');
+        const staffSelector = showStaffSelector
+            ? `<div class="mt-2"><select class="form-select form-select-sm" onchange="updateStaff('${safeId}', this.value)" ${item.assignStaff ? 'required' : ''}>
                     ${getStaffOptions(item.staffId)}
                </select></div>`
             : '';
