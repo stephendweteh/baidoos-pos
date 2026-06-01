@@ -30,6 +30,13 @@
                         @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email</label>
+                        <input type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" placeholder="e.g. kojo@example.com">
+                        <div class="form-text">Optional. Used for service assignment alerts.</div>
+                        @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-plus-lg"></i> Add Staff
                     </button>
@@ -57,7 +64,7 @@
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
                     <thead>
-                        <tr><th>#</th><th>Name</th><th>Branch</th><th>Status</th><th></th></tr>
+                        <tr><th>#</th><th>Name</th><th>Email</th><th>Branch</th><th>Status</th><th></th></tr>
                     </thead>
                     <tbody>
                         @forelse($staff as $member)
@@ -68,14 +75,17 @@
                                     @csrf @method('PUT')
                                     <input type="hidden" name="is_active" value="{{ $member->is_active ? 1 : 0 }}">
                                     <input type="text" name="name" value="{{ $member->name }}" class="form-control form-control-sm" style="max-width:220px">
+                                    <input type="email" name="email" value="{{ $member->email }}" class="form-control form-control-sm" style="max-width:240px" placeholder="Email (optional)">
                                     <button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-check-lg"></i></button>
                                 </form>
                             </td>
+                            <td class="text-muted">{{ $member->email ?: '—' }}</td>
                             <td>{{ $member->branch->name ?? '—' }}</td>
                             <td>
                                 <form method="POST" action="{{ route('staff.update', $member) }}">
                                     @csrf @method('PUT')
                                     <input type="hidden" name="name" value="{{ $member->name }}">
+                                    <input type="hidden" name="email" value="{{ $member->email }}">
                                     <input type="hidden" name="is_active" value="0">
                                     <div class="form-check form-switch mb-0">
                                         <input type="checkbox" class="form-check-input" name="is_active" value="1" {{ $member->is_active ? 'checked' : '' }} onchange="this.form.submit()">
@@ -91,7 +101,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="5" class="text-center text-muted py-4">No staff names added yet.</td></tr>
+                        <tr><td colspan="6" class="text-center text-muted py-4">No staff names added yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

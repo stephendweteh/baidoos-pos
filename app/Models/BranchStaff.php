@@ -10,7 +10,7 @@ class BranchStaff extends Model
     use HasFactory;
 
     protected $fillable = [
-        'branch_id', 'name', 'is_active',
+        'branch_id', 'name', 'email', 'is_active',
     ];
 
     protected $casts = [

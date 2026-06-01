@@ -37,6 +37,7 @@ class StaffController extends Controller
 
         $data = $request->validate([
             'name' => 'required|string|max:100',
+            'email' => 'nullable|email|max:255',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
@@ -47,6 +48,7 @@ class StaffController extends Controller
         BranchStaff::create([
             'branch_id' => $branchId,
             'name' => $data['name'],
+            'email' => $data['email'] ?: null,
             'is_active' => true,
         ]);
 
@@ -64,11 +66,13 @@ class StaffController extends Controller
 
         $data = $request->validate([
             'name' => 'required|string|max:100',
+            'email' => 'nullable|email|max:255',
             'is_active' => 'sometimes|boolean',
         ]);
 
         $staff->update([
             'name' => $data['name'],
+            'email' => $data['email'] ?: null,
             'is_active' => $request->boolean('is_active', true),
         ]);
 

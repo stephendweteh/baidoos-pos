@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Pos;
 use App\Http\Controllers\Controller;
 use App\Mail\OwnerSaleAlertMail;
 use App\Mail\SaleReceiptMail;
+use App\Mail\StaffServiceAssignmentMail;
 use App\Models\BranchStaff;
 use App\Models\Customer;
 use App\Models\DayClosing;
@@ -308,9 +309,10 @@ class SaleController extends Controller
         }
 
         if ($sale) {
-            $sale->load('items', 'branch', 'cashier');
+            $sale->load('items.staff', 'branch', 'cashier');
             $this->sendCustomerReceiptNotifications($sale);
             $this->sendOwnerAlerts($sale);
+            $this->sendStaffAssignmentAlerts($sale);
         }
 
         return redirect()->route('pos.receipt', $sale->id)
@@ -411,9 +413,10 @@ class SaleController extends Controller
                     'payment_status' => 'success',
                     'momo_status' => $momoStatus,
                 ]);
-                $sale->refresh()->load('items', 'branch', 'cashier');
+                $sale->refresh()->load('items.staff', 'branch', 'cashier');
                 $this->sendCustomerReceiptNotifications($sale);
                 $this->sendOwnerAlerts($sale);
+                $this->sendStaffAssignmentAlerts($sale);
             } elseif (in_array($momoStatus, ['FAILED', 'REJECTED', 'TIMEOUT'], true)) {
                 $sale->update([
                     'payment_status' => 'failed',
@@ -480,9 +483,10 @@ class SaleController extends Controller
                     'payment_status' => 'success',
                     'momo_status' => $status,
                 ]);
-                $sale->refresh()->load('items', 'branch', 'cashier');
+                $sale->refresh()->load('items.staff', 'branch', 'cashier');
                 $this->sendCustomerReceiptNotifications($sale);
                 $this->sendOwnerAlerts($sale);
+                $this->sendStaffAssignmentAlerts($sale);
             } elseif (in_array($status, ['FAILED', 'REJECTED', 'TIMEOUT'], true)) {
                 $sale->update([
                     'payment_status' => 'failed',
@@ -547,6 +551,42 @@ class SaleController extends Controller
                     'sale_id' => $sale->id,
                     'phone'   => $owner->phone,
                     'error'   => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    private function sendStaffAssignmentAlerts(Sale $sale): void
+    {
+        $assignedItemsByStaff = $sale->items
+            ->filter(fn ($line) => !empty($line->branch_staff_id))
+            ->groupBy('branch_staff_id');
+
+        if ($assignedItemsByStaff->isEmpty()) {
+            return;
+        }
+
+        $staffById = BranchStaff::whereIn('id', $assignedItemsByStaff->keys())
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->where('is_active', true)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($assignedItemsByStaff as $staffId => $items) {
+            $staff = $staffById->get((int) $staffId);
+            if (!$staff) {
+                continue;
+            }
+
+            try {
+                Mail::to($staff->email)->send(new StaffServiceAssignmentMail($sale, $staff, $items->values()));
+            } catch (\Throwable $e) {
+                Log::error('Staff assignment email failed', [
+                    'sale_id' => $sale->id,
+                    'staff_id' => $staff->id,
+                    'email' => $staff->email,
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
