@@ -1,0 +1,8 @@
+Products Sales & Remaining Stock patch for cPanel
+
+1. Upload cpanel_products_sales_remaining_stock_update.zip to the server.
+2. Unzip it in your Laravel app root (same level as artisan).
+3. Run: bash patch_apply.sh
+
+Alternative with explicit app path:
+APP_ROOT=/home/USERNAME/public_html bash patch_apply.sh
