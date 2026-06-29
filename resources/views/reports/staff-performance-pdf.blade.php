@@ -80,17 +80,15 @@
     <table class="report">
         <thead>
             <tr>
-                <th style="width: 16%">Date</th>
-                <th style="width: 28%">Branch</th>
-                <th style="width: 28%">Staff</th>
-                <th style="width: 14%" class="right">Services</th>
-                <th style="width: 14%" class="right">Revenue</th>
+                <th style="width: 30%">Branch</th>
+                <th style="width: 30%">Staff</th>
+                <th style="width: 20%" class="right">Services</th>
+                <th style="width: 20%" class="right">Revenue</th>
             </tr>
         </thead>
         <tbody>
             @forelse($rows as $row)
                 <tr>
-                    <td>{{ \Carbon\Carbon::parse($row->performance_date)->format('d M Y') }}</td>
                     <td>{{ $row->branch_name }}</td>
                     <td>{{ $row->staff_name }}</td>
                     <td class="right">{{ number_format($row->services_rendered) }}</td>
@@ -98,7 +96,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" style="text-align:center; color:#6b7280;">No staff performance data for this period.</td>
+                    <td colspan="4" style="text-align:center; color:#6b7280;">No staff performance data for this period.</td>
                 </tr>
             @endforelse
         </tbody>

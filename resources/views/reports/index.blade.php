@@ -84,6 +84,48 @@
 </div>
 
 <div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white fw-semibold py-2">
+                <i class="bi bi-pie-chart text-primary"></i> Product vs Service Sales & Stock Remaining
+            </div>
+            <div class="card-body py-3">
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase">Product Sales</div>
+                            <div class="fw-bold text-success" style="font-size:1.15rem">GH₵ {{ number_format($productSalesAmount, 2) }}</div>
+                            <div class="small text-muted">{{ number_format($productSalesQty) }} items sold</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase">Service Sales</div>
+                            <div class="fw-bold text-primary" style="font-size:1.15rem">GH₵ {{ number_format($serviceSalesAmount, 2) }}</div>
+                            <div class="small text-muted">{{ number_format($serviceSalesQty) }} services rendered</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase">Stock Remaining</div>
+                            <div class="fw-bold" style="font-size:1.15rem">{{ number_format($totalStockRemaining) }}</div>
+                            <div class="small text-muted">units in stock</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase">Stock Alerts</div>
+                            <div class="fw-bold text-danger" style="font-size:1.15rem">{{ number_format($outOfStockItems) }}</div>
+                            <div class="small text-muted">out of {{ number_format($totalProductItems) }} products ({{ number_format($lowStockItems) }} low)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
     <div class="col-lg-7">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white fw-semibold py-2">
@@ -119,11 +161,10 @@
                     <div class="text-center text-muted py-4" style="font-size:.85rem">No data</div>
                 @else
                 <table class="table table-sm mb-0">
-                    <thead><tr><th>Date</th><th>Branch</th><th>Staff</th><th class="text-end">Services</th><th class="text-end">Revenue</th></tr></thead>
+                    <thead><tr><th>Branch</th><th>Staff</th><th class="text-end">Services</th><th class="text-end">Revenue</th></tr></thead>
                     <tbody>
                         @foreach($staffPerformance as $row)
                         <tr>
-                            <td>{{ \Carbon\Carbon::parse($row->performance_date)->format('d M Y') }}</td>
                             <td>{{ $row->branch_name }}</td>
                             <td class="fw-semibold">{{ $row->staff_name }}</td>
                             <td class="text-end">{{ number_format($row->services_rendered) }}</td>
@@ -202,7 +243,7 @@
                 <table class="table table-sm mb-0">
                     <thead><tr><th>Method</th><th class="text-end">Revenue</th><th class="text-center">Txns</th></tr></thead>
                     <tbody>
-                        @foreach(['cash' => 'Cash', 'mtn_momo' => 'MTN MoMo'] as $key => $label)
+                        @foreach(['cash' => 'Cash', 'mtn_momo' => 'MTN MoMo', 'mobile_money' => 'Mobile Money'] as $key => $label)
                         @php $row = $byPayment[$key] ?? null @endphp
                         <tr>
                             <td class="fw-semibold text-capitalize">{{ $label }}</td>
@@ -214,6 +255,42 @@
                 </table>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold py-2">
+        <i class="bi bi-box-seam text-primary"></i> Products Sales & Remaining Stock
+    </div>
+    <div class="card-body p-0" style="max-height:320px; overflow-y:auto">
+        @if($productSalesAndStock->isEmpty())
+            <div class="text-center text-muted py-4" style="font-size:.85rem">No products found for current filter.</div>
+        @else
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr>
+                    <th>Branch</th>
+                    <th>Product</th>
+                    <th>Cashier</th>
+                    <th class="text-center">Sold Qty</th>
+                    <th class="text-end">Sales Made</th>
+                    <th class="text-center">Stock Left</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($productSalesAndStock as $row)
+                <tr>
+                    <td style="font-size:.82rem">{{ $row->branch_name }}</td>
+                    <td class="fw-semibold" style="font-size:.82rem">{{ $row->product_name }}</td>
+                    <td style="font-size:.78rem">{{ $row->cashier_names }}</td>
+                    <td class="text-center">{{ number_format($row->sold_qty) }}</td>
+                    <td class="text-end fw-semibold">GH₵ {{ number_format($row->sold_amount, 2) }}</td>
+                    <td class="text-center {{ $row->stock_remaining <= 0 ? 'text-danger fw-semibold' : ($row->stock_remaining <= 5 ? 'text-warning fw-semibold' : '') }}">{{ number_format($row->stock_remaining) }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
     </div>
 </div>
 
